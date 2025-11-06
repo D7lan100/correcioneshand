@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Mi suscripción{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">📄 Mi Suscripción</h2>
+
+  <div class="card shadow p-4">
+    <h4>{{ plan[0] }}</h4>
+    <p><strong>Precio mensual:</strong> ${{ plan[1] }}</p>
+    <hr>
+
+    <p><strong>Fecha de inicio:</strong> {{ suscripcion.fecha_inicio }}</p>
+    <p><strong>Fecha de fin:</strong> {{ suscripcion.fecha_fin }}</p>
+
+    <p><strong>Estado:</strong>
+      {% if estado == 'Activa' %}
+        <span class="badge bg-success">Activa</span>
+      {% elif estado == 'Pendiente' %}
+        <span class="badge bg-warning text-dark">Pendiente</span>
+      {% elif estado == 'Expirada' %}
+        <span class="badge bg-secondary">Expirada</span>
+      {% else %}
+        <span class="badge bg-info">{{ estado }}</span>
+      {% endif %}
+    </p>
+
+    {% if suscripcion.comprobante %}
+    <p><strong>Comprobante:</strong>
+      <a href="{{ url_for('static', filename='comprobantes/' + suscripcion.comprobante) }}" target="_blank">
+        Ver comprobante
+      </a>
+    </p>
+    {% endif %}
+
+    <a href="{{ url_for('suscripciones_bp.listar_planes') }}" class="btn btn-outline-primary mt-3">🔙 Volver a planes</a>
+  </div>
+</div>
+
+{% endblock %}

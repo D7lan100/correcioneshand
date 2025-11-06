@@ -9,9 +9,14 @@ class User(UserMixin):
         self.nombre_completo = nombre_completo
         self.id_rol = id_rol
 
-    # Flask-Login necesita este método para identificar al usuario
+    # ✅ Flask-Login requiere get_id() para manejar sesiones
     def get_id(self):
         return str(self.id_usuario)
+
+    # ✅ Propiedad extra para compatibilidad con current_user.id
+    @property
+    def id(self):
+        return self.id_usuario
 
     @classmethod
     def check_password(cls, hashed_password, password):

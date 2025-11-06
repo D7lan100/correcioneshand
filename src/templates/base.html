@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}{% endblock %} - Hand&Genius</title>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -16,7 +16,7 @@
 
     <style>
         body {
-            padding-top: 80px; /* espacio para navbar fija */
+            padding-top: 80px;
         }
         .navbar-custom {
             background: linear-gradient(135deg, #0080FF, #3399FF);
@@ -31,7 +31,6 @@
             text-decoration: underline;
         }
 
-        /* Botones de login / register estilo Hand&Genius */
         .btn-login { 
           border-radius: 20px !important; 
           padding: 8px 16px !important; 
@@ -63,9 +62,116 @@
           transform: translateY(-1px); 
           color: #0080FF !important;
         }
+
+        .footer {
+            background: linear-gradient(90deg, #0080FF, #3399FF);
+            color: white;
+            padding: 50px 0 20px;
+            margin-top: 60px;
+        }
+        .footer-title {
+          font-weight: 700;
+          font-size: 18px;
+          margin-bottom: 20px;
+        }
+        .footer-link {
+          color: white;
+          text-decoration: none;
+          opacity: 0.9;
+          font-size: 14px;
+          transition: all 0.3s ease;
+          display: block;
+          margin-bottom: 10px;
+        }
+        .footer-link:hover {
+          opacity: 1;
+          color: white;
+          padding-left: 5px;
+        }
+        .footer-social {
+          color: white;
+          font-size: 24px;
+          margin-right: 15px;
+          transition: all 0.3s ease;
+        }
+        .footer-social:hover {
+          opacity: 0.7;
+          transform: translateY(-3px);
+        }
+        .footer-text {
+          font-size: 14px;
+          opacity: 0.9;
+          margin-bottom: 10px;
+        }
+        .footer-divider {
+          border-color: rgba(255,255,255,0.3);
+          margin: 30px 0;
+        }
+        .footer-copyright {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+
+        /* Estilos mensajes flash */
+        @keyframes slideIn {
+          from { transform: translateX(400px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+          to { opacity: 0; transform: translateX(400px); }
+        }
+        #flashContainer .alert {
+          border-radius: 8px;
+          border-left: 4px solid;
+        }
+        #flashContainer .alert-danger {
+          border-left-color: #dc3545;
+          background-color: #f8d7da;
+          color: #721c24;
+        }
+        #flashContainer .alert-success {
+          border-left-color: #28a745;
+          background-color: #d4edda;
+          color: #155724;
+        }
+        #flashContainer .alert-warning {
+          border-left-color: #ffc107;
+          background-color: #fff3cd;
+          color: #856404;
+        }
+        #flashContainer .alert-info {
+          border-left-color: #17a2b8;
+          background-color: #d1ecf1;
+          color: #0c5460;
+        }
     </style>
 </head>
 <body>
+
+<!-- Mensajes Flash Flotantes -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div id="flashContainer" style="position: fixed; top: 90px; right: 20px; z-index: 9999; max-width: 350px;">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show shadow-lg mb-2" role="alert" style="animation: slideIn 0.3s ease;">
+          <strong>
+            {% if category == 'error' or category == 'danger' %}
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>Error
+            {% elif category == 'success' %}
+              <i class="bi bi-check-circle-fill me-2"></i>Éxito
+            {% elif category == 'warning' %}
+              <i class="bi bi-exclamation-circle-fill me-2"></i>Atención
+            {% else %}
+              <i class="bi bi-info-circle-fill me-2"></i>Información
+            {% endif %}
+          </strong>
+          <p class="mb-0 mt-1">{{ message }}</p>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-custom fixed-top px-3 shadow-sm">
@@ -90,7 +196,6 @@
 
         <div class="d-flex align-items-center">
             {% if current_user.is_authenticated %}
-                <!-- Mostrar carrito solo si hay sesión -->
                 <a href="{{ url_for('carrito_bp.ver') }}" class="text-decoration-none text-white me-3">
                     <i class="bi bi-cart fs-5"></i>
                 </a>
@@ -116,7 +221,6 @@
                     </ul>
                 </div>
             {% else %}
-                <!-- Botones estilo Hand&Genius cuando no hay sesión -->
                 <div class="d-flex gap-2">
                     <button class="btn btn-login" type="button" onclick="window.location.href='{{ url_for('auth_bp.login') }}'">
                         <i class="bi bi-person"></i> Iniciar Sesión
@@ -130,10 +234,9 @@
     </div>
 </nav>
 
-<!-- Contenido principal -->
 {% block content %}{% endblock %}
 
-<!-- Modal de Cierre de Sesión -->
+<!-- Modal Cerrar Sesión -->
 <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -154,9 +257,82 @@
   </div>
 </div>
 
-<!-- Bootstrap JS -->
+<footer class="footer">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-3 col-6 mb-4">
+          <h5 class="footer-title"><i class="bi bi-heart-fill"></i> Hand&Genius</h5>
+          <p class="footer-text">
+            Tu destino para regalos creativos y personalizados. Transformamos ideas en experiencias únicas.
+          </p>
+          <div class="mt-3">
+            <a href="#" class="footer-social"><i class="bi bi-facebook"></i></a>
+            <a href="#" class="footer-social"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="footer-social"><i class="bi bi-twitter"></i></a>
+            <a href="#" class="footer-social"><i class="bi bi-whatsapp"></i></a>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-6 mb-4">
+          <h5 class="footer-title"><i class="bi bi-link-45deg"></i> Enlaces Rápidos</h5>
+          <a href="{{ url_for('home_bp.index') }}" class="footer-link"><i class="bi bi-chevron-right"></i> Inicio</a>
+          <a href="{{ url_for('productos_bp.buscar_productos') }}" class="footer-link"><i class="bi bi-chevron-right"></i> Productos</a>
+          <a href="{{ url_for('navbar_bp.calendario') }}" class="footer-link"><i class="bi bi-chevron-right"></i> Calendario</a>
+          <a href="{{ url_for('navbar_bp.donaciones') }}" class="footer-link"><i class="bi bi-chevron-right"></i> Donaciones</a>
+        </div>
+
+        <div class="col-md-3 col-6 mb-4">
+          <h5 class="footer-title"><i class="bi bi-person-circle"></i> Mi Cuenta</h5>
+          <a href="{{ url_for('auth_bp.login') }}" class="footer-link"><i class="bi bi-chevron-right"></i> Iniciar Sesión</a>
+          <a href="{{ url_for('auth_bp.register') }}" class="footer-link"><i class="bi bi-chevron-right"></i> Registrarse</a>
+          <a href="#" class="footer-link"><i class="bi bi-chevron-right"></i> Mis Pedidos</a>
+          <a href="#" class="footer-link"><i class="bi bi-chevron-right"></i> Suscripción</a>
+        </div>
+
+        <div class="col-md-3 col-6 mb-4">
+          <h5 class="footer-title"><i class="bi bi-envelope-fill"></i> Contacto</h5>
+          <p class="footer-text"><i class="bi bi-geo-alt-fill"></i> Bogotá, Colombia</p>
+          <p class="footer-text"><i class="bi bi-telephone-fill"></i> +57 300 123 4567</p>
+          <p class="footer-text"><i class="bi bi-envelope-fill"></i> info@handgenius.com</p>
+          <p class="footer-text"><i class="bi bi-clock-fill"></i> Lun - Vie: 8am - 6pm</p>
+        </div>
+      </div>
+
+      <hr class="footer-divider">
+      <div class="row align-items-center">
+        <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+          <p class="footer-copyright mb-0">
+            © 2025 <strong>Hand&Genius</strong>. Todos los derechos reservados.
+          </p>
+        </div>
+        <div class="col-md-6 text-center text-md-end">
+          <span class="footer-text d-inline me-2">Métodos de pago:</span>
+          <i class="bi bi-credit-card-fill" style="font-size: 24px; margin-right: 10px;"></i>
+          <i class="bi bi-wallet-fill" style="font-size: 24px; margin-right: 10px;"></i>
+          <i class="bi bi-cash" style="font-size: 24px;"></i>
+        </div>
+      </div>
+    </div>
+</footer>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('#flashContainer .alert');
+    alerts.forEach(alert => {
+      setTimeout(() => {
+        alert.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+          const bsAlert = new bootstrap.Alert(alert);
+          bsAlert.close();
+        }, 300);
+      }, 5000);
+    });
+  });
+</script>
+
 </body>
 </html>

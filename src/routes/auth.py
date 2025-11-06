@@ -50,6 +50,7 @@ def login():
 
         if logged_user and check_password_hash(logged_user.contraseña, password):
             login_user(logged_user)
+            flash("Inicio de sesión exitoso. ¡Bienvenido!", "success")
             next_page = request.args.get('next')
             return redirect(next_page) if next_page else redirect(url_for('home_bp.home'))
         else:

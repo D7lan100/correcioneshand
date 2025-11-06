@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Subir comprobante{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">📤 Subir comprobante de pago</h2>
+
+  <div class="card shadow p-4">
+    <h4>{{ plan[1] }}</h4>
+    <p>{{ plan[2] }}</p>
+    <p><strong>Precio mensual:</strong> ${{ plan[3] }}</p>
+
+    <form action="" method="POST" enctype="multipart/form-data" class="mt-3">
+      <div class="mb-3">
+        <label for="comprobante" class="form-label">Selecciona el comprobante de pago:</label>
+        <input type="file" class="form-control" id="comprobante" name="comprobante" accept=".jpg,.jpeg,.png,.pdf" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Enviar comprobante</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

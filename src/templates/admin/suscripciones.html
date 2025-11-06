@@ -1,0 +1,48 @@
+{% extends 'admin/base_admin.html' %}
+{% block content %}
+<h2>Suscripciones</h2>
+
+<table class="table table-striped">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th>
+      <th>Usuario</th>
+      <th>Tipo</th>
+      <th>Inicio</th>
+      <th>Fin</th>
+      <th>Comprobante</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in suscripciones %}
+    <tr>
+      <td>{{ s.id_suscripcion or s['id_suscripcion'] }}</td>
+      <td>{{ s.usuario or s['usuario'] }}</td>
+      <td>{{ s.tipo or s['tipo'] }}</td>
+      <td>{{ s.fecha_inicio or s['fecha_inicio'] or '-' }}</td>
+      <td>{{ s.fecha_fin or s['fecha_fin'] or '-' }}</td>
+      <td>
+        {% if s.comprobante or s['comprobante'] %}
+          <a href="{{ url_for('static', filename='comprobantes/' ~ (s.comprobante or s['comprobante'])) }}" target="_blank">Ver</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>{{ s.estado or s['estado'] }}</td>
+      <td>
+        <form action="{{ url_for('admin_bp.aprobar_suscripcion', id_suscripcion=(s.id_suscripcion or s['id_suscripcion'])) }}" method="POST" style="display:inline">
+          <button class="btn btn-sm btn-success">Aprobar</button>
+        </form>
+        <form action="{{ url_for('admin_bp.rechazar_suscripcion', id_suscripcion=(s.id_suscripcion or s['id_suscripcion'])) }}" method="POST" style="display:inline">
+          <button class="btn btn-sm btn-danger">Rechazar</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="text-center">No hay suscripciones</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

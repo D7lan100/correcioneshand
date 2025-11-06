@@ -121,3 +121,42 @@ class ModelUser:
         usuarios = cursor.fetchall()
         cursor.close()
         return usuarios
+
+    # ----------------------------
+    # Listar todos los administradores
+    # ----------------------------
+    @classmethod
+    def listar_admins(cls, db):
+        try:
+            cursor = db.connection.cursor()
+            sql = """
+                SELECT id_usuario, correo_electronico, nombre_completo, id_rol
+                FROM usuarios
+                WHERE id_rol = 2
+                ORDER BY nombre_completo ASC
+            """
+            cursor.execute(sql)
+            admins = cursor.fetchall()
+            cursor.close()
+            return admins
+        except Exception as ex:
+            raise Exception(ex)
+
+    # ----------------------------
+    # Registrar nuevo administrador
+    # ----------------------------
+    @classmethod
+    def registrar_admin(cls, db, user, telefono):
+        try:
+            cursor = db.connection.cursor()
+            hashed_password = generate_password_hash(user.contraseña)
+            sql = """INSERT INTO usuarios 
+                     (correo_electronico, contraseña, nombre_completo, telefono, fecha_registro, id_rol) 
+                     VALUES (%s, %s, %s, %s, NOW(), 2)"""  # 2 = administrador
+            cursor.execute(sql, (user.correo_electronico, hashed_password, user.nombre_completo, telefono))
+            db.connection.commit()
+            cursor.close()
+            return True
+        except Exception as ex:
+            db.connection.rollback()
+            return False

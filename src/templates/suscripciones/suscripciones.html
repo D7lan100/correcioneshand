@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Planes de Suscripción{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+  <h2 class="text-center mb-4">💎 Planes de Suscripción</h2>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="row justify-content-center">
+    {% for plan in planes %}
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-lg border-0">
+        <div class="card-body text-center">
+          <h4 class="card-title text-primary">{{ plan[1] }}</h4>
+          <p class="card-text text-muted">{{ plan[2] }}</p>
+          <h5 class="text-success mb-3">${{ plan[3] }} / mes</h5>
+          <a href="{{ url_for('suscripciones_bp.subir_comprobante', id_tipo=plan[0]) }}" 
+             class="btn btn-outline-primary w-100">
+            Suscribirme
+          </a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="text-center">
+      <p class="text-muted">No hay planes disponibles en este momento.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}
