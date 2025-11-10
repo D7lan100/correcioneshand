@@ -59,19 +59,7 @@
 <div class="profile-container my-5">
     <h2 class="text-center mb-4">Configuración de Perfil</h2>
 
-    <!-- Mensajes Flash -->
-    {% with mensajes = get_flashed_messages(with_categories=true) %}
-      {% if mensajes %}
-        {% for categoria, mensaje in mensajes %}
-          <div class="alert alert-{{ 'success' if categoria=='success' else 'info' }} alert-dismissible fade show" role="alert">
-            {{ mensaje }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <!-- Tabs -->
+    <!-- TABS -->
     <ul class="nav nav-tabs" id="profileTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" id="perfil-tab" data-bs-toggle="tab" data-bs-target="#perfil" type="button" role="tab">
@@ -149,7 +137,9 @@
                     <select class="form-select" name="id_categoria" required>
                         <option value="">Selecciona una categoría</option>
                         {% for categoria in categorias %}
-                        <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
+                            {% if categoria.nombre != 'Tutorial' %}
+                                <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </div>
@@ -172,35 +162,6 @@
                 <button type="submit" class="btn btn-success w-100">Subir Producto</button>
             </form>
         </div>
-
-
-        <script>
-        document.getElementById("form-producto").addEventListener("submit", async (e) => {
-            e.preventDefault(); // Evita recarga de página
-            const form = e.target;
-            const formData = new FormData(form);
-
-            try {
-                const response = await fetch("{{ url_for('api_bp.api_productos') }}", {
-                    method: "POST",
-                    body: formData,
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    alert("✅ " + data.mensaje);
-                    form.reset();
-                } else {
-                    alert("❌ " + (data.error || "Error al agregar producto"));
-                }
-            } catch (err) {
-                console.error(err);
-                alert("❌ Ocurrió un error al enviar el producto.");
-            }
-        });
-        </script>
-
-
 
         <!-- SUBIR VIDEOS -->
         <div class="tab-pane fade" id="videos" role="tabpanel">
@@ -231,67 +192,102 @@
             </form>
         </div>
 
+        <!-- SUGERENCIAS -->
         <div class="tab-pane fade" id="sugerencias" role="tabpanel">
             <h5 class="mb-3 text-center"><i class="bi bi-lightbulb"></i> Mis Sugerencias</h5>
-
-            <!-- 🆕 Notificación si hay retroalimentaciones nuevas -->
-            {% if nuevas_retroalimentaciones %}
-            <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
-                <i class="bi bi-bell-fill"></i>
-                ¡Tienes nuevas retroalimentaciones en tus sugerencias!
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endif %}
-
             {% if sugerencias_usuario %}
-            <div class="table-responsive">
-                <table class="table table-bordered text-center align-middle">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>Título</th>
-                            <th>Descripción</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Retroalimentación</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for s in sugerencias_usuario %}
-                        <tr>
-                            <td>{{ s.titulo }}</td>
-                            <td>{{ s.descripcion }}</td>
-                            <td>{{ s.fecha_envio.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                {% if s.estado == 'pendiente' %}
-                                    <span class="badge bg-warning text-dark">Pendiente</span>
-                                {% elif s.estado == 'aceptada' %}
-                                    <span class="badge bg-success">Aceptada</span>
-                                {% else %}
-                                    <span class="badge bg-danger">Rechazada</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ s.retroalimentacion or 'Sin retroalimentación' }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center align-middle">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Título</th>
+                                <th>Descripción</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Retroalimentación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in sugerencias_usuario %}
+                            <tr>
+                                <td>{{ s.titulo }}</td>
+                                <td>{{ s.descripcion }}</td>
+                                <td>{{ s.fecha_envio.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if s.estado == 'pendiente' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% elif s.estado == 'aceptada' %}
+                                        <span class="badge bg-success">Aceptada</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rechazada</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ s.retroalimentacion or 'Sin retroalimentación' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
-            <div class="alert alert-info text-center">Aún no has enviado sugerencias.</div>
+                <div class="alert alert-info text-center">Aún no has enviado sugerencias.</div>
             {% endif %}
         </div>
     </div>
 </div>
 
+<!-- JS PARA MANEJAR SUBIDA DE PRODUCTOS -->
 <script>
-    // Inicializar tabs Bootstrap 5
-    var triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button'))
-    triggerTabList.forEach(function (triggerEl) {
-        var tabTrigger = new bootstrap.Tab(triggerEl)
-        triggerEl.addEventListener('click', function (event) {
-            event.preventDefault()
-            tabTrigger.show()
-        })
-    })
+document.getElementById('form-producto').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch("{{ url_for('api_bp.api_productos') }}", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            mostrarFlash('success', data.mensaje || 'Producto agregado correctamente.');
+            form.reset();
+        } else {
+            mostrarFlash('error', data.mensaje || 'Error al agregar el producto.');
+        }
+    } catch (err) {
+        mostrarFlash('warning', 'No se pudo conectar con el servidor.');
+        console.error(err);
+    }
+});
+
+// ✅ Usa las alertas del base.html
+function mostrarFlash(tipo, mensaje) {
+    const flashContainer = document.getElementById('flashContainer');
+    if (!flashContainer) return;
+
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${tipo === 'error' ? 'danger' : tipo} alert-dismissible fade show shadow-lg mb-2`;
+    alert.style.animation = 'slideIn 0.3s ease';
+    alert.innerHTML = `
+        <strong>
+            ${tipo === 'error' ? '<i class="bi bi-exclamation-triangle-fill me-2"></i>Error' :
+              tipo === 'success' ? '<i class="bi bi-check-circle-fill me-2"></i>Éxito' :
+              tipo === 'warning' ? '<i class="bi bi-exclamation-circle-fill me-2"></i>Atención' :
+              '<i class="bi bi-info-circle-fill me-2"></i>Información'}
+        </strong>
+        <p class="mb-0 mt-1">${mensaje}</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    flashContainer.appendChild(alert);
+
+    // Animación de salida
+    setTimeout(() => {
+        alert.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            alert.remove();
+        }, 300);
+    }, 5000);
+}
 </script>
 {% endblock %}
