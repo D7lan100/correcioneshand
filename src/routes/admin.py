@@ -6,6 +6,7 @@ from src.models.ModelUser import ModelUser
 from src.models.entities.User import User
 from src.database.db import get_connection
 import os
+import pymysql
 
 admin_bp = Blueprint('admin_bp', __name__, url_prefix='/admin', template_folder='../../templates/admin')
 
@@ -179,7 +180,7 @@ def index():
 # ---------------------------
 @admin_bp.route('/usuarios')
 @login_required
-@admin_required   # <-- agrega esto
+@admin_required
 def usuarios():
     db = get_connection()
     usuarios = ModelUser.listar_todos(db)
@@ -197,25 +198,38 @@ def eliminar_usuario(id):
 
     try:
         with connection.cursor() as cursor:
-            # Obtener productos del usuario
+            # 1️⃣ Productos del usuario
             cursor.execute("SELECT id_producto FROM productos WHERE id_vendedor = %s", (id,))
-            productos = cursor.fetchall()  # Lista de diccionarios [{'id_producto': 1}, ...]
-
+            productos = cursor.fetchall()
             if productos:
-                # ✅ Usar clave del diccionario
                 producto_ids = tuple(prod['id_producto'] for prod in productos)
                 if len(producto_ids) == 1:
                     producto_ids = (producto_ids[0],)
+                placeholders = ','.join(['%s'] * len(producto_ids))
+                cursor.execute(f"DELETE FROM calificaciones WHERE id_producto IN ({placeholders})", producto_ids)
+                cursor.execute(f"DELETE FROM detalle_pedido WHERE id_producto IN ({placeholders})", producto_ids)
+                cursor.execute(f"DELETE FROM material_audiovisual WHERE id_producto IN ({placeholders})", producto_ids)
+                cursor.execute(f"DELETE FROM producto_relacion WHERE id_producto_padre IN ({placeholders}) OR id_producto_hijo IN ({placeholders})", producto_ids*2)
+                cursor.execute(f"DELETE FROM productos WHERE id_producto IN ({placeholders})", producto_ids)
 
-                # Eliminar dependencias
-                cursor.execute(f"DELETE FROM calificaciones WHERE id_producto IN {producto_ids}")
-                cursor.execute(f"DELETE FROM detalle_pedido WHERE id_producto IN {producto_ids}")
-                cursor.execute(f"DELETE FROM material_audiovisual WHERE id_producto IN {producto_ids}")
-                cursor.execute(f"DELETE FROM producto_relacion WHERE id_producto_padre IN {producto_ids} OR id_producto_hijo IN {producto_ids}")
-                cursor.execute(f"DELETE FROM productos WHERE id_producto IN {producto_ids}")
+            # 2️⃣ Pedidos del usuario
+            cursor.execute("SELECT id_pedido FROM pedidos WHERE id_usuario = %s", (id,))
+            pedidos = cursor.fetchall()
+            pedido_ids = tuple(p['id_pedido'] for p in pedidos) if pedidos else ()
 
-            # Eliminar suscripciones y usuario
+            if pedido_ids:
+                placeholders = ','.join(['%s'] * len(pedido_ids))
+                cursor.execute(f"DELETE FROM detalle_pedido WHERE id_pedido IN ({placeholders})", pedido_ids)
+                cursor.execute(f"DELETE FROM domicilio WHERE id_pedido IN ({placeholders})", pedido_ids)
+                cursor.execute(f"DELETE FROM pedidos WHERE id_pedido IN ({placeholders})", pedido_ids)
+
+            # 3️⃣ Calendario
+            cursor.execute("DELETE FROM calendario WHERE id_usuario = %s", (id,))
+
+            # 4️⃣ Suscripciones
             cursor.execute("DELETE FROM suscripciones WHERE id_usuario = %s", (id,))
+
+            # 5️⃣ Usuario
             cursor.execute("DELETE FROM usuarios WHERE id_usuario = %s", (id,))
 
             connection.commit()
@@ -232,59 +246,43 @@ def eliminar_usuario(id):
 
     return redirect(url_for('admin_bp.usuarios'))
 
-@admin_bp.route('/usuario/<int:id>/editar', methods=['POST'])
-@login_required
-def editar_usuario(id):
-    from src.database.db import get_connection
 
-    connection = get_connection()
-    if not connection:
+
+@admin_bp.route('/usuario/<int:id_usuario>/editar', methods=['POST'])
+@login_required
+def admin_editar_usuario(id_usuario):
+    """Editar usuario existente desde el panel admin"""
+    nombre = request.form.get('nombre')
+    correo = request.form.get('correo')
+    telefono = request.form.get('telefono')
+    direccion = request.form.get('direccion')
+
+    if not nombre or not correo:
+        flash('❌ Nombre y correo son obligatorios.', 'warning')
+        return redirect(url_for('admin_bp.usuarios'))
+
+    conn = get_connection()
+    if not conn:
         flash("❌ Error al conectar con la base de datos", "danger")
         return redirect(url_for('admin_bp.usuarios'))
 
     try:
-        # Obtener datos del formulario
-        nombre = request.form.get('nombre')          # Input "nombre" del modal
-        correo = request.form.get('correo')          # Input "correo" del modal
-        telefono = request.form.get('telefono')      # Input "telefono" del modal
-        direccion = request.form.get('direccion')    # Input "direccion" del modal
-
-        # Validación mínima
-        if not nombre or not correo:
-            flash("❌ Nombre y correo son obligatorios", "warning")
-            return redirect(url_for('admin_bp.usuarios'))
-
-        with connection.cursor() as cursor:
-            # Verificar que el correo no exista en otro usuario
-            cursor.execute(
-                "SELECT id_usuario FROM usuarios WHERE correo_electronico = %s AND id_usuario != %s",
-                (correo, id)
-            )
-            if cursor.fetchone():
-                flash("❌ Este correo ya está registrado en otro usuario", "warning")
-                return redirect(url_for('admin_bp.usuarios'))
-
-            # Actualizar usuario usando los nombres correctos de columnas
-            cursor.execute("""
+        with conn.cursor() as cur:
+            cur.execute("""
                 UPDATE usuarios
                 SET nombre_completo = %s,
                     correo_electronico = %s,
                     telefono = %s,
                     direccion = %s
                 WHERE id_usuario = %s
-            """, (nombre, correo, telefono, direccion, id))
+            """, (nombre, correo, telefono, direccion, id_usuario))
+            conn.commit()
 
-            connection.commit()
-            flash("✅ Usuario actualizado correctamente", "success")
-
+        flash("✅ Usuario actualizado correctamente.", "success")
     except Exception as e:
-        connection.rollback()
-        import traceback
-        print(traceback.format_exc())  # Para depuración en la consola
         flash(f"❌ Error inesperado al editar usuario: {e}", "danger")
-
     finally:
-        connection.close()
+        conn.close()
 
     return redirect(url_for('admin_bp.usuarios'))
 
@@ -311,6 +309,34 @@ def productos():
         flash("Error al cargar productos.", "danger")
     return render_template('admin/productos.html', productos=productos, user=current_user)
 
+@admin_bp.route('/productos/agregar', methods=['POST'])
+@login_required
+@admin_required
+def agregar_producto():
+    db = current_app.db
+    nombre = request.form.get('nombre')
+    precio = request.form.get('precio')
+    descripcion = request.form.get('descripcion', '')
+
+    if not nombre or not precio:
+        flash("❌ El nombre y el precio son obligatorios", "warning")
+        return redirect(url_for('admin_bp.productos'))
+
+    try:
+        cursor = db.connection.cursor()
+        cursor.execute(
+            "INSERT INTO productos (nombre, precio, descripcion) VALUES (%s, %s, %s)",
+            (nombre, precio, descripcion)
+        )
+        db.connection.commit()
+        cursor.close()
+        flash("✅ Producto agregado correctamente", "success")
+    except Exception as e:
+        db.connection.rollback()
+        current_app.logger.exception("Error agregando producto: %s", e)
+        flash("❌ Error al agregar el producto", "danger")
+
+    return redirect(url_for('admin_bp.productos'))
 
 # ---------------------------
 # Suscripciones list (admin)

@@ -49,6 +49,7 @@ def create_app():
     from src.routes.usuarios import usuarios_bp
     from src.routes.carrito import carrito_bp
     from src.routes.suscripciones import suscripciones_bp
+    from src.routes.personalizacion import personalizacion_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(home_bp)
@@ -78,7 +79,11 @@ def create_app():
         'admin_bp.aprobar_suscripcion',
         'admin_bp.rechazar_suscripcion',
         'admin_bp.eliminar_usuario',
-        'admin_bp.editar_usuario'
+        'admin_bp.admin_editar_usuario',
+        'productos_bp.guardar_texto_personalizado',
+        'productos_bp.subir_boceto',
+        'productos_bp.guardar_plantilla',
+        'productos_bp.registrar_formulario' 
     ]
 
     for ep in csrf_exempt_endpoints:

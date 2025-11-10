@@ -28,7 +28,7 @@
                         <td>{{ u.id or u[0] or u['id'] }}</td>
                         <td>{{ u.nombre or u[1] or u['nombre'] }}</td>
                         <td>{{ u.email or u.correo or u['correo_electronico'] or 'Sin correo' }}</td>
-                        <td>{{ u.telefono or u[3] or u['telefono'] or 'N/A' }}</td>
+                        <td>{{ u.telefono if u.telefono else 'Sin número' }}</td>
                         <td>{{ u.rol or u[5] or u['rol'] or 'Usuario' }}</td>
                         <td>
                             {% if u.fecha_registro %}
@@ -42,8 +42,8 @@
                                     data-id="{{ u.id or u[0] }}"
                                     data-nombre="{{ u.nombre or u[1] }}"
                                     data-correo="{{ u.email or u.correo or u['correo_electronico'] }}"
-                                    data-celular="{{ u.telefono or u[3] }}"
-                                    data-direccion="{{ u.direccion or u[6] }}">
+                                    data-telefono="{{ u.telefono or '' }}"
+                                    data-direccion="{{ u.direccion or '' }}">
                                 Editar
                             </button>
                             <button class="btn btn-sm btn-danger delete-btn"
@@ -88,7 +88,7 @@
           </div>
           <div class="mb-3">
             <label>Teléfono</label>
-            <input type="text" name="celular" id="modal-celular" class="form-control">
+            <input type="text" name="telefono" id="modal-telefono" class="form-control">
           </div>
           <div class="mb-3">
             <label>Dirección</label>
@@ -133,7 +133,7 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
     document.getElementById('modal-id').value = btn.dataset.id;
     document.getElementById('modal-nombre').value = btn.dataset.nombre;
     document.getElementById('modal-correo').value = btn.dataset.correo;
-    document.getElementById('modal-celular').value = btn.dataset.celular;
+    document.getElementById('modal-telefono').value = btn.dataset.telefono || '';
     document.getElementById('modal-direccion').value = btn.dataset.direccion || '';
     document.getElementById('formEdit').action = `/admin/usuario/${btn.dataset.id}/editar`;
     new bootstrap.Modal(document.getElementById('modalEdit')).show();
