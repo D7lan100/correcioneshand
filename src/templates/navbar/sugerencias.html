@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+
+  <div class="text-center mb-5">
+    <h2 class="fw-bold text-primary">💡 Sugerencias de la Comunidad</h2>
+    <p class="text-muted">Comparte tus ideas y descubre las que ya fueron aceptadas por el equipo.</p>
+  </div>
+
+  <!-- Mensajes flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  {% if current_user.is_authenticated %}
+  <!-- Card para enviar sugerencia -->
+  <div class="card shadow-lg border-0 mb-5 rounded-4">
+    <div class="card-body p-4">
+      <h5 class="mb-3 fw-semibold text-primary">✍ Envía tu sugerencia</h5>
+      <form method="POST" action="{{ url_for('sugerencias_bp.enviar_sugerencia') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="titulo" class="form-label fw-semibold">Título</label>
+          <input type="text" class="form-control border-primary-subtle" id="titulo" name="titulo" maxlength="255" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="descripcion" class="form-label fw-semibold">Descripción</label>
+          <textarea class="form-control border-primary-subtle" id="descripcion" name="descripcion" rows="4" maxlength="1500" required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 fw-semibold">
+          🚀 Enviar sugerencia
+        </button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+    <div class="alert alert-warning text-center shadow-sm rounded-3">
+      🔐 Debes <a href="{{ url_for('auth_bp.login') }}" class="alert-link">iniciar sesión</a> para enviar una sugerencia.
+    </div>
+  {% endif %}
+
+  <div class="text-center mb-4">
+    <h4 class="fw-bold text-success">🌟 Sugerencias Aceptadas</h4>
+    <p class="text-muted">Estas son las ideas que se han implementado o están en desarrollo.</p>
+  </div>
+
+  {% if sugerencias %}
+    <div class="row g-4">
+      {% for s in sugerencias %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card border-0 shadow-sm h-100 rounded-4 hover-shadow">
+          <div class="card-body">
+            <h5 class="card-title text-primary fw-semibold">{{ s.titulo }}</h5>
+            <p class="card-text text-secondary">{{ s.descripcion }}</p>
+          </div>
+
+          <!-- 🔹 Bloque de Likes y Dislikes -->
+          <div class="card-footer bg-light border-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+
+              <!-- 👍 Like -->
+              <form action="{{ url_for('sugerencias_bp.like_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST" class="m-0 p-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-success btn-sm">
+                  👍 {{ s.likes or 0 }}
+                </button>
+              </form>
+
+              <!-- 👎 Dislike -->
+              <form action="{{ url_for('sugerencias_bp.dislike_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST" class="m-0 p-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm">
+                  👎 {{ s.dislikes or 0 }}
+                </button>
+              </form>
+            </div>
+
+            <small class="text-muted text-end">
+              📅 {{ s.fecha_envio.strftime('%d/%m/%Y') if s.fecha_envio else '' }}<br>
+              {% if s.autor %}✍ {{ s.autor }}{% endif %}
+            </small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center shadow-sm rounded-3 mt-4">
+      🤔 No hay sugerencias aceptadas por el momento. ¡Sé el primero en enviar una!
+    </div>
+  {% endif %}
+
+</div>
+
+<style>
+  .hover-shadow:hover {
+    transform: translateY(-3px);
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+  }
+  button.btn-outline-success:hover {
+    background-color: #28a745;
+    color: white;
+  }
+  button.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+  }
+</style>
+{% endblock %}

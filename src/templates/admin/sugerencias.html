@@ -1,0 +1,129 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4"><i class="fas fa-lightbulb me-2"></i> Sugerencias de Usuarios</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if sugerencias %}
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle shadow-sm">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="text-center">
+                    {% for s in sugerencias %}
+                    <tr>
+                        <td>{{ s.id_sugerencia }}</td>
+                        <td>{{ s.titulo }}</td>
+                        <td>{{ s.descripcion }}</td>
+                        <td>{{ s.nombre_completo }}</td>
+                        <td>{{ s.fecha_envio.strftime('%Y-%m-%d') if s.fecha_envio else 'N/A' }}</td>
+                        <td>
+                            {% if s.estado == 'pendiente' %}
+                                <span class="badge bg-warning text-dark">Pendiente</span>
+                            {% elif s.estado == 'aceptada' %}
+                                <span class="badge bg-success">Aceptada</span>
+                            {% else %}
+                                <span class="badge bg-danger">Rechazada</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.estado == 'pendiente' %}
+                            <button class="btn btn-success btn-sm" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalRetro{{ s.id_sugerencia }}" 
+                                    title="Aprobar">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalRechazo{{ s.id_sugerencia }}"
+                                    title="Rechazar">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            {% else %}
+                                <em>Sin acciones</em>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- Modal Aprobación -->
+                    <div class="modal fade" id="modalRetro{{ s.id_sugerencia }}" tabindex="-1" aria-labelledby="modalRetroLabel{{ s.id_sugerencia }}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">Aprobar Sugerencia</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <form action="{{ url_for('admin_bp.admin_aprobar_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST">
+                            <div class="modal-body">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <div class="mb-3">
+                                <label class="form-label">Retroalimentación (opcional)</label>
+                                <textarea class="form-control" name="retroalimentacion" rows="3" placeholder="Escribe un mensaje para el usuario..."></textarea>
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="submit" class="btn btn-success">Aprobar</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Modal Rechazo -->
+                    <div class="modal fade" id="modalRechazo{{ s.id_sugerencia }}" tabindex="-1" aria-labelledby="modalRechazoLabel{{ s.id_sugerencia }}" aria-hidden="true">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title">Rechazar Sugerencia</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                          </div>
+                          <form action="{{ url_for('admin_bp.admin_rechazar_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST">
+                            <div class="modal-body">
+                              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <div class="mb-3">
+                                <label class="form-label">Motivo del rechazo</label>
+                                <textarea class="form-control" name="retroalimentacion" rows="3" placeholder="Explica brevemente el motivo..."></textarea>
+                              </div>
+                            </div>
+                            <div class="modal-footer">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                              <button type="submit" class="btn btn-danger">Rechazar</button>
+                            </div>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center shadow-sm">
+            No hay sugerencias registradas.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -88,6 +88,11 @@
                 <i class="bi bi-camera-video me-1"></i> Subir Videos
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link" id="sugerencias-tab" data-bs-toggle="tab" data-bs-target="#sugerencias" type="button" role="tab">
+                <i class="bi bi-lightbulb me-1"></i> Mis Sugerencias
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -186,6 +191,56 @@
                 </div>
                 <button type="submit" class="btn btn-warning w-100">Subir Video</button>
             </form>
+        </div>
+
+        <div class="tab-pane fade" id="sugerencias" role="tabpanel">
+            <h5 class="mb-3 text-center"><i class="bi bi-lightbulb"></i> Mis Sugerencias</h5>
+
+            <!-- 🆕 Notificación si hay retroalimentaciones nuevas -->
+            {% if nuevas_retroalimentaciones %}
+            <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+                <i class="bi bi-bell-fill"></i>
+                ¡Tienes nuevas retroalimentaciones en tus sugerencias!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            {% if sugerencias_usuario %}
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Título</th>
+                            <th>Descripción</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Retroalimentación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sugerencias_usuario %}
+                        <tr>
+                            <td>{{ s.titulo }}</td>
+                            <td>{{ s.descripcion }}</td>
+                            <td>{{ s.fecha_envio.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if s.estado == 'pendiente' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% elif s.estado == 'aceptada' %}
+                                    <span class="badge bg-success">Aceptada</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Rechazada</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ s.retroalimentacion or 'Sin retroalimentación' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">Aún no has enviado sugerencias.</div>
+            {% endif %}
         </div>
     </div>
 </div>

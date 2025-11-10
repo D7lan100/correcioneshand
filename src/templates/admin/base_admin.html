@@ -25,6 +25,7 @@
         <a href="{{ url_for('admin_bp.usuarios') }}" class="{% if request.endpoint == 'admin_bp.usuarios' %}active{% endif %}">Usuarios</a>
         <a href="{{ url_for('admin_bp.productos') }}" class="{% if request.endpoint == 'admin_bp.productos' %}active{% endif %}">Productos</a>
         <a href="{{ url_for('admin_bp.suscripciones') }}" class="{% if request.endpoint == 'admin_bp.suscripciones' %}active{% endif %}">Suscripciones</a>
+        <a href="{{ url_for('admin_bp.admin_sugerencias') }}" class="nav-link {% if request.endpoint == 'admin_bp.admin_sugerencias' %}active{% endif %}">Sugerencias</a>
         <hr style="border-color: rgba(255,255,255,0.05)">
         <a href="{{ url_for('home_bp.home') }}">Volver al sitio</a>
         <a href="{{ url_for('auth_bp.logout_redirect') }}">Cerrar sesión</a>

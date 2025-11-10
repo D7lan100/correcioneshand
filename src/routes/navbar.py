@@ -4,6 +4,7 @@ from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 
 from src.models.ModelCalendario import ModelCalendario
+from src.models.ModelSugerencia import ModelSugerencia 
 from src.models.entities.Calendario import Calendario
 from src.models.entities.User import User
 
@@ -12,8 +13,14 @@ navbar_bp = Blueprint('navbar_bp', __name__)
 @navbar_bp.route('/perfil/configuracion', endpoint='configuracion_perfil')
 @login_required
 def configuracion_perfil():
-    # Renderizamos la página de configuración de perfil
-    return render_template('usuarios/configuracion.html', user=current_user)
+    """Renderiza la configuración del perfil y las sugerencias del usuario."""
+    try:
+        sugerencias = ModelSugerencia.obtener_por_usuario(current_app.db, current_user.id)
+    except Exception as e:
+        sugerencias = []
+        flash(f"⚠ Error al obtener sugerencias: {str(e)}", "danger")
+
+    return render_template('usuarios/configuracion.html', user=current_user, sugerencias=sugerencias)
 
 @navbar_bp.route('/perfil/actualizar', methods=['POST'], endpoint='actualizar_perfil')
 @login_required

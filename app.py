@@ -1,6 +1,6 @@
 # app.py
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_mysqldb import MySQL
 from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager
@@ -14,7 +14,20 @@ from src.models.ModelUser import ModelUser
 def create_app():
     app = Flask(__name__, template_folder="src/templates", static_folder="src/static")
     app.config.from_object(config['development'])
+    # -----------------------------
+    # 🔒 Aseguramos SECRET_KEY para sesiones/CSRF
+    # Si no tienes SECRET_KEY en config, la cogemos de env o usamos un fallback para dev.
+    # En producción debes usar una variable de entorno fuerte y segura.
+    # -----------------------------
+    app.secret_key = os.environ.get('SECRET_KEY') or app.config.get('SECRET_KEY') or 'dev_fallback_secret_key_!change_me'
 
+    # Extender tiempo de validez del token CSRF (segundos). Ajusta según necesites.
+    # Por defecto Flask-WTF tiene 3600 (1h). Aquí lo aumentamos para pruebas a 24h.
+    app.config['WTF_CSRF_TIME_LIMIT'] = 60 * 60 * 24
+
+    # Opciones de cookie de sesión para que navegador mantenga la sesión correctamente
+    app.config.setdefault('SESSION_COOKIE_HTTPONLY', True)
+    app.config.setdefault('SESSION_COOKIE_SAMESITE', 'Lax')
     # ------------------ EXTENSIONES ------------------
     csrf = CSRFProtect(app)
     db = MySQL(app)
@@ -24,7 +37,7 @@ def create_app():
     login_manager.login_message_category = 'info'
     mail = Mail(app)  # Configurar correo
 
-    SECRET_KEY_TOKEN = os.environ.get('SECRET_KEY_TOKEN') or app.config.get('SECRET_KEY', 'clave_secreta_fallback')
+    SECRET_KEY_TOKEN = os.environ.get('SECRET_KEY_TOKEN') or app.config.get('SECRET_KEY', app.secret_key)
     s = URLSafeTimedSerializer(SECRET_KEY_TOKEN)
 
     # Guardar en la app para uso en otros módulos
@@ -50,6 +63,7 @@ def create_app():
     from src.routes.carrito import carrito_bp
     from src.routes.suscripciones import suscripciones_bp
     from src.routes.personalizacion import personalizacion_bp
+    from src.routes.sugerencias import sugerencias_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(home_bp)
@@ -60,9 +74,11 @@ def create_app():
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(carrito_bp)
     app.register_blueprint(suscripciones_bp, url_prefix="/suscripciones")
+    app.register_blueprint(sugerencias_bp, url_prefix="/sugerencias")
 
     # ------------------ EXENCIONES CSRF ------------------
     csrf_exempt_endpoints = [
+        'auth_bp.logout_redirect',
         'admin_bp.in_editar_usuario',
         'admin_bp.admin_eliminar_usuario',
         'admin_bp.admin_editar_producto',

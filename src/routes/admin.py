@@ -4,6 +4,7 @@ from functools import wraps
 from datetime import date, timedelta
 from src.models.ModelUser import ModelUser
 from src.models.entities.User import User
+from src.models.ModelSugerencia import ModelSugerencia
 from src.database.db import get_connection
 import os
 import pymysql
@@ -337,6 +338,63 @@ def agregar_producto():
         flash("❌ Error al agregar el producto", "danger")
 
     return redirect(url_for('admin_bp.productos'))
+
+# -----------------------------
+# Sugerencias
+# -----------------------------
+@admin_bp.route('/sugerencias', endpoint='admin_sugerencias')
+@login_required
+@admin_required
+def admin_sugerencias():
+    try:
+        db = current_app.db
+        sugerencias = ModelSugerencia.obtener_todas(db)
+        return render_template('admin/sugerencias.html', sugerencias=sugerencias, user=current_user)
+    except Exception as e:
+        print(f"❌ Error al cargar sugerencias: {e}")
+        flash(f"Error al cargar sugerencias: {str(e)}", "danger")
+        return render_template('admin/sugerencias.html', sugerencias=[], user=current_user)
+
+
+# -----------------------------
+# ✅ Aprobar / Rechazar sugerencias con retroalimentación
+# -----------------------------
+@admin_bp.route('/sugerencia/<int:id_sugerencia>/aprobar', methods=['POST'], endpoint='admin_aprobar_sugerencia')
+@login_required
+@admin_required
+def admin_aprobar_sugerencia(id_sugerencia):
+    try:
+        retroalimentacion = request.form.get('retroalimentacion', '').strip()
+        db = current_app.db
+        ok = ModelSugerencia.cambiar_estado(db, id_sugerencia, 'aceptada', retroalimentacion)
+        if ok:
+            flash("✅ Sugerencia aprobada con retroalimentación enviada al usuario.", "success")
+        else:
+            flash("Error al aprobar sugerencia.", "danger")
+    except Exception as e:
+        current_app.db.connection.rollback()
+        print(f"❌ Error al aprobar sugerencia: {e}")
+        flash(f"Error al aprobar sugerencia: {str(e)}", "danger")
+    return redirect(url_for('admin_bp.admin_sugerencias'))
+
+
+@admin_bp.route('/sugerencia/<int:id_sugerencia>/rechazar', methods=['POST'], endpoint='admin_rechazar_sugerencia')
+@login_required
+@admin_required
+def admin_rechazar_sugerencia(id_sugerencia):
+    try:
+        retroalimentacion = request.form.get('retroalimentacion', '').strip()
+        db = current_app.db
+        ok = ModelSugerencia.cambiar_estado(db, id_sugerencia, 'rechazada', retroalimentacion)
+        if ok:
+            flash("❌ Sugerencia rechazada y retroalimentación enviada al usuario.", "warning")
+        else:
+            flash("Error al rechazar sugerencia.", "danger")
+    except Exception as e:
+        current_app.db.connection.rollback()
+        print(f"❌ Error al rechazar sugerencia: {e}")
+        flash(f"Error al rechazar sugerencia: {str(e)}", "danger")
+    return redirect(url_for('admin_bp.admin_sugerencias'))
 
 # ---------------------------
 # Suscripciones list (admin)
