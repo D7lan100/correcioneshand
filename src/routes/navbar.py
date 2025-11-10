@@ -13,14 +13,39 @@ navbar_bp = Blueprint('navbar_bp', __name__)
 @navbar_bp.route('/perfil/configuracion', endpoint='configuracion_perfil')
 @login_required
 def configuracion_perfil():
-    """Renderiza la configuración del perfil y las sugerencias del usuario."""
+    """Renderiza la configuración del perfil, las sugerencias del usuario y las categorías para subir productos."""
     try:
         sugerencias = ModelSugerencia.obtener_por_usuario(current_app.db, current_user.id)
     except Exception as e:
         sugerencias = []
         flash(f"⚠ Error al obtener sugerencias: {str(e)}", "danger")
 
-    return render_template('usuarios/configuracion.html', user=current_user, sugerencias=sugerencias)
+    # 🔹 Obtener categorías disponibles (excluyendo 'Tutorial')
+    # 🔹 Obtener categorías disponibles (excluyendo 'Tutorial')
+    try:
+        cur = current_app.db.connection.cursor()
+        cur.execute("""
+            SELECT id_categoria, nombre
+            FROM categorias
+            WHERE nombre != 'Tutorial'
+            ORDER BY nombre
+        """)
+        data = cur.fetchall()
+        categorias = [{'id_categoria': row[0], 'nombre': row[1]} for row in data]  # 👈 convierte las tuplas a diccionarios
+        cur.close()
+    except Exception as e:
+        categorias = []
+        flash(f"⚠ Error al cargar categorías: {str(e)}", "danger")
+
+
+
+    # 🔹 Renderizar plantilla con todo lo necesario
+    return render_template(
+        'usuarios/configuracion.html',
+        user=current_user,
+        sugerencias=sugerencias,
+        categorias=categorias
+    )
 
 @navbar_bp.route('/perfil/actualizar', methods=['POST'], endpoint='actualizar_perfil')
 @login_required

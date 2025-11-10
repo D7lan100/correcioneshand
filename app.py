@@ -86,6 +86,7 @@ def create_app():
         'admin_bp.admin_agregar_producto',
         'usuario_bp.actualizar_perfil',
         'api_bp.api_eventos',
+        'api_bp.api_productos',
         'carrito_bp.agregar',
         'carrito_bp.vaciar',
         'carrito_bp.eliminar',
