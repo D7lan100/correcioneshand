@@ -1,16 +1,17 @@
+# src/routes/carrito.py
 from flask import Blueprint, render_template, session, request, redirect, url_for, flash, current_app
+from flask_wtf.csrf import CSRFProtect
 from flask_login import login_required, current_user
-from datetime import datetime
-import os
-from werkzeug.utils import secure_filename
+from src.database.db import get_connection
 
+csrf = CSRFProtect()
 carrito_bp = Blueprint('carrito_bp', __name__, template_folder="../templates/navbar")
 
-
-# -----------------------------
-# Agregar producto al carrito
-# -----------------------------
-@carrito_bp.route('/carrito/agregar/<int:id_producto>', methods=['POST'])
+# ----------------------------------------
+# 🛒 Agregar producto al carrito (SESSION)
+# ----------------------------------------
+@csrf.exempt
+@carrito_bp.route('/agregar/<int:id_producto>', methods=['POST'])
 def agregar(id_producto):
     cantidad = int(request.form.get('cantidad', 1))
 
@@ -18,196 +19,166 @@ def agregar(id_producto):
         session['carrito'] = {}
 
     carrito = session['carrito']
-    carrito[str(id_producto)] = carrito.get(str(id_producto), 0) + cantidad
-    session['carrito'] = carrito
 
-    flash("✅ Producto agregado correctamente al carrito", "success")
+    try:
+        connection = get_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT id_producto, nombre, precio, imagen 
+                FROM productos 
+                WHERE id_producto = %s
+            """, (id_producto,))
+            producto = cursor.fetchone()
+
+        if not producto:
+            flash("❌ Producto no encontrado.", "danger")
+            return redirect(url_for('productos_bp.productos'))
+
+        id_str = str(id_producto)
+        if id_str in carrito:
+            carrito[id_str]['cantidad'] += cantidad
+        else:
+            carrito[id_str] = {
+                'id_producto': producto[0],
+                'nombre': producto[1],
+                'precio': float(producto[2]),
+                'imagen': producto[3],
+                'cantidad': cantidad
+            }
+
+        session['carrito'] = carrito
+        session.modified = True  # ✅ MUY IMPORTANTE
+        print("🛍️ Carrito actual:", session['carrito'])
+        flash("✅ Producto agregado correctamente al carrito.", "success")
+
+    except Exception as e:
+        print(f"❌ Error al agregar producto: {e}")
+        flash("No se pudo agregar el producto al carrito.", "danger")
+
     return redirect(url_for('carrito_bp.ver'))
 
-
-# -----------------------------
-# Ver carrito (desde sesión)
-# -----------------------------
-@carrito_bp.route('/carrito')
+# ----------------------------------------
+# 👀 Ver carrito (desde SESSION)
+# ----------------------------------------
+@csrf.exempt
+@carrito_bp.route('/')
 def ver():
     carrito = session.get('carrito', {})
     productos_detalle = []
     total = 0.0
 
-    # Si el carrito está vacío
     if not carrito:
+        flash("Tu carrito está vacío. Agrega productos antes de continuar.", "info")
         return render_template('navbar/carrito.html', productos=[], total=0)
 
-    try:
-        cur = current_app.db.connection.cursor()
+    # ✅ Leer directamente los datos del carrito guardado en la sesión
+    for item in carrito.values():
+        subtotal = float(item['precio']) * int(item['cantidad'])
+        total += subtotal
+        productos_detalle.append({
+            'id_producto': item['id_producto'],
+            'nombre': item['nombre'],
+            'precio': item['precio'],
+            'imagen': item['imagen'],
+            'cantidad': item['cantidad'],
+            'subtotal': subtotal
+        })
 
-        # Obtener los productos según los IDs guardados en sesión
-        ids = tuple(map(int, carrito.keys()))
-        cur.execute(f"""
-            SELECT id_producto, nombre, precio, imagen
-            FROM productos
-            WHERE id_producto IN {ids}
-        """)
-        productos_db = cur.fetchall()
-        cur.close()
-
-        for p in productos_db:
-            id_prod = str(p[0])
-            cantidad = carrito.get(id_prod, 1)
-            subtotal = float(p[2]) * cantidad
-
-            productos_detalle.append({
-                'id_producto': p[0],
-                'nombre': p[1],
-                'precio': float(p[2]),
-                'imagen': p[3],
-                'cantidad': cantidad,
-                'subtotal': subtotal,
-                'texto': None,
-                'boceto': None,
-                'plantilla': None,
-                'formulario': None
-            })
-
-        total = sum(item['subtotal'] for item in productos_detalle)
-
-    except Exception as e:
-        print(f"❌ Error al cargar carrito: {e}")
-        flash("Error al cargar el carrito", "danger")
-
+    print("🧾 Carrito mostrado:", productos_detalle)
     return render_template('navbar/carrito.html', productos=productos_detalle, total=total)
 
-# -----------------------------
-# Eliminar producto del carrito
-# -----------------------------
-@carrito_bp.route('/carrito/eliminar/<int:id_producto>', methods=['POST'])
+# ----------------------------------------
+# 🗑️ Eliminar producto del carrito
+# ----------------------------------------
+@csrf.exempt
+@carrito_bp.route('/eliminar/<int:id_producto>', methods=['POST'])
 def eliminar(id_producto):
     carrito = session.get('carrito', {})
-    carrito.pop(str(id_producto), None)
-    session['carrito'] = carrito
 
-    flash("🗑️ Producto eliminado del carrito", "info")
+    id_str = str(id_producto)
+    if id_str in carrito:
+        del carrito[id_str]
+        session['carrito'] = carrito
+        session.modified = True
+        flash("🗑️ Producto eliminado del carrito.", "info")
+    else:
+        flash("⚠️ El producto no se encontró en el carrito.", "warning")
+
     return redirect(url_for('carrito_bp.ver'))
 
 
-# -----------------------------
-# Vaciar todo el carrito
-# -----------------------------
-@carrito_bp.route('/carrito/vaciar', methods=['POST'])
+# ----------------------------------------
+# 🧹 Vaciar carrito
+# ----------------------------------------
+@csrf.exempt
+@carrito_bp.route('/vaciar', methods=['POST'])
 def vaciar():
     session.pop('carrito', None)
-    flash("🧹 Carrito vaciado correctamente", "info")
+    flash("🧹 Carrito vaciado correctamente.", "info")
     return redirect(url_for('carrito_bp.ver'))
 
 
-# -----------------------------
-# Checkout / Crear pedido
-# -----------------------------
-@carrito_bp.route('/carrito/checkout', methods=['POST'])
+# ----------------------------------------
+# 💳 Checkout — Confirmación del pedido
+# ----------------------------------------
+@csrf.exempt
+@carrito_bp.route('/checkout', methods=['GET', 'POST'])
 @login_required
 def checkout():
     carrito = session.get('carrito', {})
     if not carrito:
         flash("⚠️ Tu carrito está vacío.", "warning")
-        return redirect(url_for('productos_bp.productos'))
-
-    user_id = current_user.id_usuario
-    fecha_pedido = datetime.now()
-
-    try:
-        cur = current_app.db.connection.cursor()
-
-        # Crear pedido
-        cur.execute("""
-            INSERT INTO pedidos (id_usuario, fecha_pedido, estado)
-            VALUES (%s, %s, %s)
-        """, (user_id, fecha_pedido, 'pendiente'))
-        id_pedido = cur.lastrowid
-
-        # Insertar detalles
-        for id_prod, cantidad in carrito.items():
-            cur.execute("SELECT precio FROM productos WHERE id_producto=%s", (id_prod,))
-            precio = cur.fetchone()[0]
-            cur.execute("""
-                INSERT INTO detalle_pedido (id_pedido, id_producto, cantidad, precio_total)
-                VALUES (%s, %s, %s, %s)
-            """, (id_pedido, id_prod, cantidad, precio * cantidad))
-
-        current_app.db.connection.commit()
-        cur.close()
-
-        session.pop('carrito', None)
-        flash("✅ Pedido creado correctamente. Sube el comprobante de pago.", "info")
-        return redirect(url_for('carrito_bp.subir_comprobante', id_pedido=id_pedido))
-
-    except Exception as e:
-        print(f"❌ Error al realizar checkout: {e}")
-        flash("Error al procesar el pedido", "danger")
         return redirect(url_for('carrito_bp.ver'))
 
+    connection = get_connection()
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT nombre_completo, correo, telefono, direccion
+            FROM usuarios WHERE id_usuario = %s
+        """, (current_user.id_usuario,))
+        usuario = cursor.fetchone()
 
-# -----------------------------
-# Subir comprobante de pago
-# -----------------------------
-@carrito_bp.route('/carrito/pago/<int:id_pedido>', methods=['GET', 'POST'])
-@login_required
-def subir_comprobante(id_pedido):
+    usuario_data = {
+        'nombre': usuario[0] if usuario else '',
+        'correo': usuario[1] if usuario else '',
+        'telefono': usuario[2] if usuario else '',
+        'direccion': usuario[3] if usuario else ''
+    }
+
+    productos = list(carrito.values())
+    total = sum(item['precio'] * item['cantidad'] for item in productos)
+
     if request.method == 'POST':
-        file = request.files.get('comprobante')
-        metodo_pago = request.form.get('metodo_pago')
+        # Guardar pedido en base de datos (si lo deseas)
+        flash("✅ Pedido confirmado correctamente.", "success")
+        session.pop('carrito', None)
+        return redirect(url_for('carrito_bp.ver'))
 
-        if not file or file.filename.strip() == '':
-            flash('⚠️ Debes subir un comprobante de pago.', 'danger')
-            return redirect(request.url)
-
-        upload_folder = os.path.join('src', 'static', 'comprobantes')
-        os.makedirs(upload_folder, exist_ok=True)
-
-        filename = secure_filename(f"pedido_{id_pedido}_user_{current_user.id_usuario}_{file.filename}")
-        filepath = os.path.join(upload_folder, filename)
-        file.save(filepath)
-
-        try:
-            cur = current_app.db.connection.cursor()
-            cur.execute("""
-                UPDATE pedidos 
-                SET comprobante_pago = %s, metodo_pago = %s, estado = 'en_revision'
-                WHERE id_pedido = %s
-            """, (filename, metodo_pago, id_pedido))
-            current_app.db.connection.commit()
-            cur.close()
-
-            flash('📤 Comprobante enviado correctamente. Espera la validación del administrador.', 'success')
-        except Exception as e:
-            current_app.db.connection.rollback()
-            print(f"❌ Error al guardar comprobante: {e}")
-            flash('❌ Error al guardar el comprobante.', 'danger')
-
-        return redirect(url_for('carrito_bp.ver_seguimiento', id_pedido=id_pedido))
-
-    return render_template('navbar/subir_comprobante.html', id_pedido=id_pedido)
+    return render_template('navbar/confirmar_pedido.html', items=productos, total=total, usuario=usuario_data)
 
 
-# -----------------------------
-# Ver seguimiento del pedido
-# -----------------------------
-@carrito_bp.route('/carrito/seguimiento/<int:id_pedido>')
+# ----------------------------------------
+# 🚀 Continuar compra — Resumen con usuario
+# ----------------------------------------
+@carrito_bp.route('/continuar')
 @login_required
-def ver_seguimiento(id_pedido):
-    pedido = None
-    try:
-        cur = current_app.db.connection.cursor()
-        cur.execute("""
-            SELECT p.id_pedido, p.estado, p.metodo_pago, p.comprobante_pago,
-                   d.estado AS envio_estado, d.empresa_transportadora, d.fecha_envio
-            FROM pedidos p
-            LEFT JOIN domicilio d ON p.id_pedido = d.id_pedido
-            WHERE p.id_pedido = %s
-        """, (id_pedido,))
-        pedido = cur.fetchone()
-        cur.close()
-    except Exception as e:
-        print(f"❌ Error al obtener seguimiento: {e}")
-        flash("Error al cargar seguimiento", "danger")
+def continuar():
+    carrito = session.get('carrito', {})
 
-    return render_template('navbar/seguimiento.html', pedido=pedido)
+    if not carrito:
+        flash('Tu carrito está vacío. Agrega productos antes de continuar.', 'warning')
+        return redirect(url_for('carrito_bp.ver'))
+
+    total = sum(item['precio'] * item['cantidad'] for item in carrito.values())
+
+    connection = get_connection()
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT * FROM usuarios WHERE id_usuario = %s", (current_user.id_usuario,))
+        usuario = cursor.fetchone()
+
+    return render_template(
+        'carrito/continuar.html',
+        usuario=usuario,
+        carrito=carrito,
+        total=total
+    )

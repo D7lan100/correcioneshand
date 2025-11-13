@@ -1,29 +1,37 @@
-# Archivo: src/models/entities/Productos.py
+# Archivo: src/models/entities/Producto.py
 
 class Producto:
-    def __init__(self, id_producto, nombre, descripcion, precio, imagen, 
-                 id_categoria, id_vendedor, disponible, es_personalizable, calificacion_promedio):
+    def __init__(self, id_producto, nombre, descripcion, precio, imagen,
+                 id_categoria, id_vendedor,
+                 disponible=True, es_personalizable=False,
+                 calificacion_promedio=None, nivel_dificultad=None,
+                 duracion=None, herramientas=None,
+                 instrucciones=None, tipo_video=None,
+                 url_video=None, archivo_video=None):
         """
-        Constructor de la clase Producto
-        
+        Clase Producto: representa tanto productos físicos como videotutoriales.
+
         Args:
-            id_producto: ID único del producto
-            nombre: Nombre del producto
-            descripcion: Descripción del producto
-            precio: Precio del producto
-            imagen: URL o path de la imagen
-            id_categoria: ID de la categoría
-            id_vendedor: ID del vendedor
-            disponible: Bool indicando si está disponible
-            es_personalizable: Bool indicando si es personalizable
-            calificacion_promedio: Calificación promedio del producto
+            id_producto: ID del producto o videotutorial.
+            nombre: Nombre del producto o videotutorial.
+            descripcion: Descripción.
+            precio: Precio (0 si es gratuito).
+            imagen: Imagen o portada.
+            id_categoria: Categoría (1=Ramo, 2=Carta, 3=Combo, 4=Tutorial, 5=Material).
+            id_vendedor: ID del vendedor (si aplica).
+            disponible: Si está disponible o visible.
+            es_personalizable: Si el producto es personalizable (no aplica a videos).
+            calificacion_promedio: Promedio de calificaciones.
+            instrucciones: Instrucciones del videotutorial.
+            tipo_video: Tipo de acceso (público, privado, premium).
+            url_video: Enlace a YouTube.
+            archivo_video: Archivo de video local.
+            nivel_dificultad: Nivel de dificultad (básico, intermedio, avanzado).
+            duracion: Duración del videotutorial.
+            herramientas: Herramientas o materiales requeridos.
         """
-        # SOLUCIÓN: Crear tanto 'id' como 'id_producto'
-        # Esto permite que funcione tanto en plantillas como en el resto del código
-        self.id = id_producto           # Para las plantillas HTML (producto.id)
-        self.id_producto = id_producto  # Para consistencia con base de datos
-        
-        # Resto de atributos
+        self.id_producto = id_producto
+        self.id = id_producto
         self.nombre = nombre
         self.descripcion = descripcion
         self.precio = precio
@@ -33,19 +41,23 @@ class Producto:
         self.disponible = disponible
         self.es_personalizable = es_personalizable
         self.calificacion_promedio = calificacion_promedio
+        self.nivel_dificultad = nivel_dificultad
+        self.duracion = duracion
+        self.herramientas = herramientas
+        self.instrucciones = instrucciones
+        self.tipo_video = tipo_video
+        self.url_video = url_video
+        self.archivo_video = archivo_video
 
     def __repr__(self):
-        """Representación string para debugging"""
-        return f"<Producto {self.id}: {self.nombre}>"
-    
+        return f"<Producto id={self.id_producto}, nombre={self.nombre}>"
+
     def __str__(self):
-        """Representación string amigable"""
         return self.nombre
-    
+
     def to_dict(self):
-        """Convierte el objeto a diccionario (útil para JSON/APIs)"""
+        """Convierte el objeto a diccionario"""
         return {
-            'id': self.id,
             'id_producto': self.id_producto,
             'nombre': self.nombre,
             'descripcion': self.descripcion,
@@ -55,13 +67,18 @@ class Producto:
             'id_vendedor': self.id_vendedor,
             'disponible': self.disponible,
             'es_personalizable': self.es_personalizable,
-            'calificacion_promedio': self.calificacion_promedio
+            'calificacion_promedio': self.calificacion_promedio,
+            'instrucciones': self.instrucciones,
+            'tipo_video': self.tipo_video,
+            'url_video': self.url_video,
+            'archivo_video': self.archivo_video,
+            'nivel_dificultad': self.nivel_dificultad,
+            'duracion': self.duracion,
+            'herramientas': self.herramientas
         }
-    
+
     def get_precio_formateado(self):
-        """Retorna el precio formateado con símbolo de moneda"""
         return f"${self.precio:,.2f}"
-    
+
     def esta_disponible(self):
-        """Retorna si el producto está disponible"""
         return bool(self.disponible)

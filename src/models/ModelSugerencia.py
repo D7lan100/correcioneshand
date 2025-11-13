@@ -1,4 +1,5 @@
 # src/models/ModelSugerencia.py
+
 from datetime import datetime
 import MySQLdb.cursors  # ✅ Necesario para usar DictCursor
 

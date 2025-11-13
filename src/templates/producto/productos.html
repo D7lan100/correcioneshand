@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Productos - HandiGenius{% endblock %}
+{% block title %}Productos - Hand&Genius{% endblock %}
 
 {% block content %}
 <style>
@@ -204,8 +204,7 @@
           <div class="product-card w-100 d-flex flex-column">
             <div class="product-image-container">
               {% if producto.imagen %}
-                <img src="{{ url_for('static', filename=producto.imagen.replace('static/', '')) }}" 
-                     class="product-image" alt="{{ producto.nombre }}">
+                <img src="{{ producto.imagen }}" class="product-image" alt="{{ producto.nombre }}">
               {% else %}
                 <div class="no-image-placeholder"><i class="bi bi-image"></i></div>
               {% endif %}
@@ -230,14 +229,21 @@
             </div>
 
             {% if producto.disponible %}
-            <!-- 🔹 Formulario funcional para agregar al carrito -->
-            <form action="{{ url_for('carrito_bp.agregar', id_producto=producto.id_producto) }}" method="POST" class="form-add-cart">
-              <input type="number" name="cantidad" value="1" min="1" required>
-              <button type="submit" class="btn-cart"><i class="bi bi-cart-plus"></i> Agregar</button>
-            </form>
+              <!-- 🔹 Agregar al carrito (funciona para normales o personalizables) -->
+              <form action="{{ url_for('carrito_bp.agregar', id_producto=producto.id_producto) }}" 
+                    method="POST" class="form-add-cart">
+                <input type="hidden" name="texto_personalizado" value="">
+                <input type="hidden" name="imagen_personalizada" value="">
+                <input type="hidden" name="plantilla_seleccionada" value="">
+                <input type="hidden" name="formulario_seleccionado" value="">
+                <input type="number" name="cantidad" value="1" min="1" required>
+                <button type="submit" class="btn-cart">
+                  <i class="bi bi-cart-plus"></i> Agregar
+                </button>
+              </form>
             {% endif %}
 
-            <a href="{{ url_for('productos_bp.detalle_producto', id=producto.id_producto) }}" class="btn-details mt-auto">
+            <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="btn-details mt-auto">
               <i class="bi bi-eye"></i> Ver detalles
             </a>
           </div>

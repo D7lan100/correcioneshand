@@ -30,15 +30,30 @@ class ModelUser:
     def get_by_id(cls, db, id_usuario):
         try:
             cursor = db.connection.cursor()
-            sql = "SELECT id_usuario, correo_electronico, nombre_completo, id_rol FROM usuarios WHERE id_usuario = %s"
+            sql = """
+                SELECT id_usuario, correo_electronico, nombre_completo, telefono, direccion, id_rol
+                FROM usuarios
+                WHERE id_usuario = %s
+            """
             cursor.execute(sql, (id_usuario,))
             row = cursor.fetchone()
             cursor.close()
             if row is not None:
-                return User(row[0], row[1], None, row[2], row[3])
+                # Ajustamos el constructor para aceptar los nuevos campos
+                user = User(
+                    id_usuario=row[0],
+                    correo_electronico=row[1],
+                    contraseña=None,
+                    nombre_completo=row[2],
+                    id_rol=row[5]
+                )
+                user.telefono = row[3]
+                user.direccion = row[4]
+                return user
             return None
         except Exception as ex:
             raise Exception(ex)
+
 
     # ----------------------------
     # Obtener usuario por email
@@ -160,7 +175,10 @@ class ModelUser:
         except Exception as ex:
             db.connection.rollback()
             return False
-        
+
+    # ----------------------------
+    # Listar todos los usuarios (corregido con dirección)
+    # ----------------------------
     @classmethod
     def listar_todos(cls, db):
         try:
@@ -171,6 +189,7 @@ class ModelUser:
                 u.nombre_completo,
                 u.correo_electronico,
                 u.telefono,
+                u.direccion,
                 r.nombre AS rol,
                 u.fecha_registro
             FROM usuarios u
@@ -187,6 +206,7 @@ class ModelUser:
                     'nombre': row['nombre_completo'],
                     'correo': row['correo_electronico'],
                     'telefono': row['telefono'],
+                    'direccion': row['direccion'],  # ✅ agregado
                     'rol': row['rol'] if row['rol'] else 'Sin rol',
                     'fecha_registro': row['fecha_registro']
                 })

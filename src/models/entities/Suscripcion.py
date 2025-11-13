@@ -1,3 +1,5 @@
+# src/models/entities/Suscripcion.py
+
 class Suscripcion:
     def __init__(self, id_suscripcion=None, id_usuario=None, id_tipo_suscripcion=None,
                  fecha_inicio=None, fecha_fin=None, comprobante=None, estado=None):

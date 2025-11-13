@@ -96,6 +96,11 @@
           <i class="fa-solid fa-lightbulb"></i> Sugerencias
         </a>
 
+        <a href="{{ url_for('admin_bp.admin_chat') }}" class="{% if request.endpoint == 'admin_bp.admin_chat' %}active{% endif %}">
+          <i class="fa-solid fa-comments"></i> Chat en Vivo
+        </a>
+
+
         <hr>
 
         <a href="{{ url_for('home_bp.home') }}">

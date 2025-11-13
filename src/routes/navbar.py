@@ -10,55 +10,25 @@ from src.models.entities.User import User
 
 navbar_bp = Blueprint('navbar_bp', __name__)
 
-@navbar_bp.route('/perfil/configuracion', endpoint='configuracion_perfil')
-@login_required
-def configuracion_perfil():
-    """Renderiza la configuración del perfil, las sugerencias del usuario y las categorías para subir productos."""
-    try:
-        sugerencias = ModelSugerencia.obtener_por_usuario(current_app.db, current_user.id)
-    except Exception as e:
-        sugerencias = []
-        flash(f"⚠ Error al obtener sugerencias: {str(e)}", "danger")
-
-    # 🔹 Obtener categorías disponibles (excluyendo 'Tutorial')
-    # 🔹 Obtener categorías disponibles (excluyendo 'Tutorial')
-    try:
-        cur = current_app.db.connection.cursor()
-        cur.execute("""
-            SELECT id_categoria, nombre
-            FROM categorias
-            WHERE nombre != 'Tutorial'
-            ORDER BY nombre
-        """)
-        data = cur.fetchall()
-        categorias = [{'id_categoria': row[0], 'nombre': row[1]} for row in data]  # 👈 convierte las tuplas a diccionarios
-        cur.close()
-    except Exception as e:
-        categorias = []
-        flash(f"⚠ Error al cargar categorías: {str(e)}", "danger")
-
-
-
-    # 🔹 Renderizar plantilla con todo lo necesario
-    return render_template(
-        'usuarios/configuracion.html',
-        user=current_user,
-        sugerencias=sugerencias,
-        categorias=categorias
-    )
-
 @navbar_bp.route('/perfil/actualizar', methods=['POST'], endpoint='actualizar_perfil')
 @login_required
 def actualizar_perfil():
-    # Obtenemos los datos del formulario
+    """Actualiza los datos del perfil del usuario logueado."""
     nombre = request.form.get('nombre')
     correo = request.form.get('correo')
     telefono = request.form.get('telefono')
     direccion = request.form.get('direccion')
-    nueva_contra = request.form.get('contraseña')
+    nueva_contra = request.form.get('nueva_contraseña')
+    confirmar_contra = request.form.get('confirmar_contraseña')
+
+    # ✅ Validar coincidencia de contraseñas
+    if nueva_contra and nueva_contra != confirmar_contra:
+        flash('❌ Las contraseñas no coinciden. Intenta nuevamente.', 'danger')
+        return redirect(url_for('navbar_bp.configuracion_perfil'))
 
     try:
         cur = current_app.db.connection.cursor()
+
         if nueva_contra:
             hash_pw = generate_password_hash(nueva_contra)
             cur.execute("""
@@ -74,6 +44,7 @@ def actualizar_perfil():
                     direccion=%s
                 WHERE id_usuario=%s
             """, (nombre, correo, telefono, direccion, current_user.id))
+
         current_app.db.connection.commit()
         flash('✅ Perfil actualizado correctamente.', 'success')
     except Exception as e:
@@ -82,8 +53,8 @@ def actualizar_perfil():
     finally:
         cur.close()
 
-    # Redirigimos al endpoint correcto
-    return redirect(url_for('navbar_bp.configuracion_perfil'))
+    return redirect(url_for('usuarios_bp.configuracion'))
+
 
 @navbar_bp.route('/donaciones', endpoint='donaciones')
 def donaciones():

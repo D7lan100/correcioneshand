@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
-
 {% block title %}Inicio{% endblock %}
-
 {% block content %}
 <style>
 /* ======= GENERAL ======= */
@@ -136,7 +134,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* ======= FLECHAS DEL CARRUSEL (MEJORADAS) ======= */
+/* ======= FLECHAS DEL CARRUSEL ======= */
 .carousel-control-prev,
 .carousel-control-next {
   width: 5%;
@@ -183,57 +181,6 @@ body {
   opacity: 0.9;
 }
 
-/* ======= CATEGORÍAS ======= */
-.categories-section {
-  margin-top: 60px;
-  margin-bottom: 100px;
-}
-
-.section-title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #007bff;
-}
-
-.section-subtitle {
-  font-size: 1rem;
-  color: #6c757d;
-  margin-bottom: 30px;
-}
-
-.category-card {
-  background: white;
-  border-radius: 15px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-  padding: 30px 15px;
-  text-align: center;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.category-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
-}
-
-.category-icon {
-  font-size: 2rem;
-  color: #007bff;
-  margin-bottom: 10px;
-}
-
-.category-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 5px;
-}
-
-.category-count {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
 /* ======= RESPONSIVE ======= */
 @media (max-width: 768px) {
   .carousel-card-body {
@@ -247,25 +194,6 @@ body {
   }
   .main-title {
     font-size: 1.6rem;
-  }
-}
-
-/* ======= ANIMACIONES (transiciones suaves) ======= */
-@keyframes slideIn {
-  from {
-    transform: translateX(400px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeOut {
-  to {
-    opacity: 0;
-    transform: translateX(400px);
   }
 }
 </style>
@@ -297,11 +225,13 @@ body {
                       <span class="carousel-badge">HOT</span>
                       {% endif %}
                       {% if producto.imagen %}
-                        <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}">
+                        {% if producto.imagen.startswith('http') %}
+                          <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}">
+                        {% else %}
+                          <img src="{{ url_for('static', filename='uploads/' + producto.imagen) }}" alt="{{ producto.nombre }}">
+                        {% endif %}
                       {% else %}
-                        <div class="no-image-placeholder">
-                          <i class="bi bi-gift"></i>
-                        </div>
+                        <div class="no-image-placeholder"><i class="bi bi-gift"></i></div>
                       {% endif %}
                     </div>
                     <div class="carousel-card-body">
@@ -315,7 +245,7 @@ body {
                         <span class="rating-text">({{ "%.1f"|format(producto.calificacion_promedio) }})</span>
                       </div>
                       {% endif %}
-                      <a href="{{ url_for('productos_bp.detalle_producto', id=producto.id_producto) }}" class="carousel-btn">Ver más</a>
+                      <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="carousel-btn">Ver más</a>
                     </div>
                   </div>
                 </div>
@@ -325,49 +255,8 @@ body {
             {% endfor %}
           {% else %}
             <div class="carousel-item active">
-              <div class="row g-4">
-                <div class="col-md-4">
-                  <div class="carousel-product-card">
-                    <div class="carousel-img-wrapper">
-                      <span class="carousel-badge">HOT</span>
-                      <div class="no-image-placeholder"><i class="bi bi-gift"></i></div>
-                    </div>
-                    <div class="carousel-card-body">
-                      <h5 class="carousel-card-title">Producto Ejemplo 1</h5>
-                      <div class="carousel-card-price">$15,990</div>
-                      <div class="carousel-rating">★★★★★ <span class="rating-text">(5.0)</span></div>
-                      <button class="carousel-btn">Ver más</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="carousel-product-card">
-                    <div class="carousel-img-wrapper">
-                      <span class="carousel-badge">HOT</span>
-                      <div class="no-image-placeholder"><i class="bi bi-heart"></i></div>
-                    </div>
-                    <div class="carousel-card-body">
-                      <h5 class="carousel-card-title">Producto Ejemplo 2</h5>
-                      <div class="carousel-card-price">$25,990</div>
-                      <div class="carousel-rating">★★★★<span style="color: #e2e8f0;">★</span> <span class="rating-text">(4.5)</span></div>
-                      <button class="carousel-btn">Ver más</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="carousel-product-card">
-                    <div class="carousel-img-wrapper">
-                      <span class="carousel-badge">HOT</span>
-                      <div class="no-image-placeholder"><i class="bi bi-palette"></i></div>
-                    </div>
-                    <div class="carousel-card-body">
-                      <h5 class="carousel-card-title">Producto Ejemplo 3</h5>
-                      <div class="carousel-card-price">$35,990</div>
-                      <div class="carousel-rating">★★★★★ <span class="rating-text">(4.8)</span></div>
-                      <button class="carousel-btn">Ver más</button>
-                    </div>
-                  </div>
-                </div>
+              <div class="text-center p-5">
+                <h5>No hay productos destacados disponibles</h5>
               </div>
             </div>
           {% endif %}
@@ -410,65 +299,6 @@ body {
           <div class="stat-label">Atención</div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- 🧩 CATEGORÍAS -->
-  <div class="categories-section">
-    <h3 class="section-title text-center">Explora por Categorías</h3>
-    <p class="section-subtitle text-center">Encuentra exactamente lo que buscas</p>
-
-    <div class="row g-3">
-      {% if categorias and categorias|length > 0 %}
-        {% for categoria in categorias[:4] %}
-        <div class="col-md-3 col-6">
-          <div class="category-card" onclick="window.location.href='{{ url_for('productos_bp.productos') }}?categoria={{ categoria.id_categoria }}'">
-            <div class="category-icon">
-              {% if 'regalo' in categoria.nombre.lower() %}
-                <i class="bi bi-gift-fill"></i>
-              {% elif 'arte' in categoria.nombre.lower() %}
-                <i class="bi bi-palette-fill"></i>
-              {% elif 'personaliz' in categoria.nombre.lower() %}
-                <i class="bi bi-heart-fill"></i>
-              {% else %}
-                <i class="bi bi-star-fill"></i>
-              {% endif %}
-            </div>
-            <div class="category-name">{{ categoria.nombre }}</div>
-            <div class="category-count">{{ categoria.total_productos|default(0) }} productos</div>
-          </div>
-        </div>
-        {% endfor %}
-      {% else %}
-        <div class="col-md-3 col-6">
-          <div class="category-card">
-            <div class="category-icon"><i class="bi bi-gift-fill"></i></div>
-            <div class="category-name">Regalos</div>
-            <div class="category-count">Ver productos</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="category-card">
-            <div class="category-icon"><i class="bi bi-palette-fill"></i></div>
-            <div class="category-name">Artesanías</div>
-            <div class="category-count">Ver productos</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="category-card">
-            <div class="category-icon"><i class="bi bi-heart-fill"></i></div>
-            <div class="category-name">Personalizados</div>
-            <div class="category-count">Ver productos</div>
-          </div>
-        </div>
-        <div class="col-md-3 col-6">
-          <div class="category-card">
-            <div class="category-icon"><i class="bi bi-star-fill"></i></div>
-            <div class="category-name">Premium</div>
-            <div class="category-count">Ver productos</div>
-          </div>
-        </div>
-      {% endif %}
     </div>
   </div>
 </div>

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Mis Videotutoriales{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3 class="text-center mb-4">🎥 Mis Videotutoriales</h3>
+
+  {% if videos %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4">
+      {% for video in videos %}
+      <div class="col">
+        <div class="card shadow-sm h-100">
+          <div class="position-relative">
+            {% if video[3] %}
+              <img src="{{ video[3] }}" class="card-img-top" alt="{{ video[1] }}">
+            {% else %}
+              <img src="{{ url_for('static', filename='img/default_video.jpg') }}" class="card-img-top" alt="Sin portada">
+            {% endif %}
+            <span class="badge bg-primary position-absolute top-0 end-0 m-2 text-uppercase">{{ video[6] }}</span>
+          </div>
+
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div>
+              <h5 class="card-title">{{ video[1] }}</h5>
+              <p class="card-text text-muted">{{ video[2][:100] }}{% if video[2]|length > 100 %}...{% endif %}</p>
+              {% if video[7] %}
+                <small class="text-secondary">🎯 Dificultad: {{ video[7] }}</small><br>
+              {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <a href="{{ url_for('videotutoriales_bp.detalle_video', id_video=video[0]) }}" class="btn btn-outline-primary btn-sm">Ver</a>
+              <div>
+                <a href="{{ url_for('usuarios_bp.editar_video', id_video=video[0]) }}" class="btn btn-warning btn-sm">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <a href="{{ url_for('usuarios_bp.eliminar_video', id_video=video[0]) }}" class="btn btn-danger btn-sm"
+                   onclick="return confirm('¿Seguro que deseas eliminar este videotutorial?')">
+                  <i class="bi bi-trash3"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center">Aún no has subido ningún videotutorial.</div>
+  {% endif %}
+</div>
+{% endblock %}

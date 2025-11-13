@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory, jsonify
 from flask_login import login_required, current_user
 from functools import wraps
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from src.models.ModelUser import ModelUser
 from src.models.entities.User import User
 from src.models.ModelSugerencia import ModelSugerencia
@@ -25,7 +25,6 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
 # ---------------------------
 # Helpers
 # ---------------------------
@@ -37,7 +36,6 @@ def fetchone_dict(cursor):
     cols = [d[0] for d in cursor.description] if cursor.description else []
     row = cursor.fetchone()
     return dict(zip(cols, row)) if row else None
-
 
 # ---------------------------
 # Dashboard principal
@@ -52,14 +50,15 @@ def index():
         "total_productos": 0,
         "total_pedidos": 0,
         "pedidos_pendientes": 0,
-        "ingresos_mes": 0,
         "productos_populares": [],
         "actividad_reciente": []
     }
+    categorias = []
 
     try:
         cur = db.connection.cursor()
 
+        # Totales principales
         cur.execute("SELECT COUNT(*) FROM usuarios")
         estadisticas["total_usuarios"] = cur.fetchone()[0]
 
@@ -72,38 +71,41 @@ def index():
         cur.execute("SELECT COUNT(*) FROM pedidos WHERE estado='pendiente'")
         estadisticas["pedidos_pendientes"] = cur.fetchone()[0]
 
+        # Productos más vendidos (usa la tabla detalle_pedido)
         cur.execute("""
-            SELECT COALESCE(SUM(total),0)
-            FROM pedidos 
-            WHERE MONTH(fecha_pedido)=MONTH(CURDATE()) AND YEAR(fecha_pedido)=YEAR(CURDATE())
-        """)
-        estadisticas["ingresos_mes"] = float(cur.fetchone()[0] or 0)
-
-        cur.execute("""
-            SELECT p.nombre AS nombre, SUM(dp.cantidad) AS ventas
-            FROM detalle_pedido dp
-            JOIN productos p ON dp.id_producto=p.id_producto
+            SELECT p.nombre AS nombre, COALESCE(SUM(dp.cantidad), 0) AS ventas
+            FROM productos p
+            LEFT JOIN detalle_pedido dp ON dp.id_producto = p.id_producto
             GROUP BY p.id_producto, p.nombre
             ORDER BY ventas DESC
             LIMIT 5
         """)
         estadisticas["productos_populares"] = fetchall_dict(cur)
 
+        # Actividad reciente
         cur.execute("""
-            SELECT 'Pedido #' AS tipo, CONCAT('Pedido #', id_pedido) AS descripcion, fecha_pedido AS fecha
-            FROM pedidos
-            ORDER BY fecha_pedido DESC
+            SELECT CONCAT('Pedido #', p.id_pedido) AS descripcion, p.fecha_pedido AS fecha, p.estado AS tipo
+            FROM pedidos p
+            ORDER BY p.fecha_pedido DESC
             LIMIT 5
         """)
-        actividad = fetchall_dict(cur)
+        estadisticas["actividad_reciente"] = fetchall_dict(cur)
 
-        estadisticas["actividad_reciente"] = actividad
+        # Categorías
+        cur.execute("SELECT id_categoria, nombre FROM categorias ORDER BY nombre ASC")
+        categorias = fetchall_dict(cur)
+
         cur.close()
     except Exception as e:
-        print(f"Error en dashboard: {e}")
+        print(f"❌ Error en dashboard:", e)
 
-    return render_template('admin/dashboard.html', estadisticas=estadisticas, user=current_user)
-
+    return render_template(
+        'admin/dashboard.html',
+        estadisticas=estadisticas,
+        categorias=categorias,
+        user=current_user,
+        current_time=datetime.now().strftime("%d/%m/%Y %H:%M")
+    )
 
 # ---------------------------
 # USUARIOS
@@ -115,7 +117,6 @@ def usuarios():
     db = get_connection()
     usuarios = ModelUser.listar_todos(db)
     return render_template('admin/usuarios.html', usuarios=usuarios)
-
 
 @admin_bp.route('/usuario/<int:id>/eliminar', methods=['POST'])
 @login_required
@@ -135,7 +136,6 @@ def eliminar_usuario(id):
         conn.close()
     return redirect(url_for('admin_bp.usuarios'))
 
-
 @admin_bp.route('/usuario/<int:id_usuario>/editar', methods=['POST'])
 @login_required
 @admin_required
@@ -144,6 +144,7 @@ def admin_editar_usuario(id_usuario):
     correo = request.form.get('correo')
     telefono = request.form.get('telefono')
     direccion = request.form.get('direccion')
+    id_rol = request.form.get('id_rol')
 
     if not nombre or not correo:
         flash('❌ Nombre y correo son obligatorios.', 'warning')
@@ -153,9 +154,10 @@ def admin_editar_usuario(id_usuario):
     try:
         cur = conn.cursor()
         cur.execute("""
-            UPDATE usuarios SET nombre_completo=%s, correo_electronico=%s,
-            telefono=%s, direccion=%s WHERE id_usuario=%s
-        """, (nombre, correo, telefono, direccion, id_usuario))
+            UPDATE usuarios 
+            SET nombre_completo=%s, correo_electronico=%s, telefono=%s, direccion=%s, id_rol=%s 
+            WHERE id_usuario=%s
+        """, (nombre, correo, telefono, direccion, id_rol, id_usuario))
         conn.commit()
         flash("✅ Usuario actualizado correctamente.", "success")
     except Exception as e:
@@ -165,7 +167,6 @@ def admin_editar_usuario(id_usuario):
     finally:
         conn.close()
     return redirect(url_for('admin_bp.usuarios'))
-
 
 # ---------------------------
 # PRODUCTOS
@@ -177,14 +178,33 @@ def productos():
     db = current_app.db
     try:
         cur = db.connection.cursor()
-        cur.execute("SELECT * FROM productos ORDER BY id_producto DESC")
+        cur.execute("""
+            SELECT 
+                p.id_producto,
+                p.nombre,
+                p.descripcion,
+                p.precio,
+                p.imagen,
+                p.disponible,
+                p.es_personalizable,
+                p.id_categoria,
+                c.nombre AS categoria_nombre
+            FROM productos p
+            LEFT JOIN categorias c ON p.id_categoria = c.id_categoria
+            ORDER BY p.id_producto DESC
+        """)
         productos = fetchall_dict(cur)
+
+        cur.execute("SELECT id_categoria, nombre FROM categorias ORDER BY nombre ASC")
+        categorias = fetchall_dict(cur)
+
         cur.close()
     except Exception as e:
         productos = []
+        categorias = []
         flash("Error al cargar productos.", "danger")
         print(e)
-    return render_template('admin/productos.html', productos=productos, user=current_user)
+    return render_template('admin/productos.html', productos=productos, categorias=categorias, user=current_user)
 
 @admin_bp.route('/productos/agregar', methods=['POST'])
 @login_required
@@ -205,8 +225,6 @@ def agregar_producto():
 
     try:
         cursor = db.connection.cursor()
-
-        # 🚀 NO insertamos el id_producto, dejamos que MySQL lo asigne automáticamente.
         cursor.execute("""
             INSERT INTO productos (nombre, descripcion, precio, imagen, id_categoria, disponible, es_personalizable)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -294,6 +312,41 @@ def admin_sugerencias():
         sugerencias = []
     return render_template('admin/sugerencias.html', sugerencias=sugerencias, user=current_user)
 
+# ---------------------------
+# APROBAR / RECHAZAR SUGERENCIAS
+# ---------------------------
+@admin_bp.route('/sugerencias/aprobar/<int:id_sugerencia>', methods=['POST'])
+@login_required
+@admin_required
+def admin_aprobar_sugerencia(id_sugerencia):
+    try:
+        cur = current_app.db.connection.cursor()
+        cur.execute("UPDATE sugerencias SET estado = 'Aprobada' WHERE id_sugerencia = %s", (id_sugerencia,))
+        current_app.db.connection.commit()
+        cur.close()
+        flash("✅ Sugerencia aprobada correctamente", "success")
+    except Exception as e:
+        current_app.db.connection.rollback()
+        flash("❌ Error al aprobar la sugerencia", "danger")
+        print(e)
+    return redirect(url_for('admin_bp.admin_sugerencias'))
+
+
+@admin_bp.route('/sugerencias/rechazar/<int:id_sugerencia>', methods=['POST'])
+@login_required
+@admin_required
+def admin_rechazar_sugerencia(id_sugerencia):
+    try:
+        cur = current_app.db.connection.cursor()
+        cur.execute("UPDATE sugerencias SET estado = 'Rechazada' WHERE id_sugerencia = %s", (id_sugerencia,))
+        current_app.db.connection.commit()
+        cur.close()
+        flash("❌ Sugerencia rechazada", "info")
+    except Exception as e:
+        current_app.db.connection.rollback()
+        flash("❌ Error al rechazar la sugerencia", "danger")
+        print(e)
+    return redirect(url_for('admin_bp.admin_sugerencias'))
 
 # ---------------------------
 # PEDIDOS
@@ -419,3 +472,59 @@ def rechazar_suscripcion(id_suscripcion):
 def ver_comprobante(filename):
     upload_path = os.path.join(current_app.root_path, 'static', 'comprobantes')
     return send_from_directory(upload_path, filename)
+
+# -----------------------------
+# 💬 Chat en vivo (nuevo)
+# -----------------------------
+@admin_bp.route('/chat', methods=['GET'], endpoint='admin_chat')
+@login_required
+@admin_required
+def admin_chat():
+    """
+    Vista del chat en vivo para el administrador.
+    """
+    return render_template('admin/chat_admin.html', user=current_user)
+
+# ---------------------------
+# API: Datos para los gráficos
+# ---------------------------
+@admin_bp.route('/dashboard/data')
+@login_required
+@admin_required
+def dashboard_data():
+    conn = get_connection()
+    categoria = request.args.get("categoria")
+
+    try:
+        cur = conn.cursor()
+
+        # 🔹 Estados de pedidos
+        cur.execute("SELECT estado, COUNT(*) AS cantidad FROM pedidos GROUP BY estado")
+        estados = fetchall_dict(cur)
+
+        # 🔹 Productos más vendidos (opcionalmente por categoría)
+        query = """
+            SELECT p.nombre AS nombre, COALESCE(SUM(dp.cantidad), 0) AS ventas
+            FROM productos p
+            LEFT JOIN detalle_pedido dp ON dp.id_producto = p.id_producto
+        """
+        params = []
+        if categoria and categoria != "todas":
+            query += " WHERE p.id_categoria = %s"
+            params.append(categoria)
+
+        query += " GROUP BY p.id_producto, p.nombre ORDER BY ventas DESC LIMIT 5"
+        cur.execute(query, params)
+        productos = fetchall_dict(cur)
+
+        cur.close()
+        conn.close()
+
+        return jsonify({
+            "productos": productos,
+            "estados": estados
+        })
+
+    except Exception as e:
+        print("❌ Error en dashboard/data:", e)
+        return jsonify({"error": str(e)}), 500

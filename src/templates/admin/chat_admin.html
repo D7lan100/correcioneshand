@@ -1,0 +1,116 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Chat en Vivo - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <h2 class="fw-bold text-primary text-center mb-4">💬 Chat en Vivo (Administrador)</h2>
+
+  <div class="row">
+    <!-- 🗨️ Panel de chat -->
+    <div class="col-md-8">
+      <div id="chatBox" class="border rounded p-3 mb-3 shadow-sm bg-light" 
+           style="height: 450px; overflow-y: auto; border-left: 4px solid #0d6efd;">
+      </div>
+
+      <div class="input-group shadow-sm">
+        <input id="inputChat" type="text" class="form-control" placeholder="Escribe tu mensaje...">
+        <button class="btn btn-success" onclick="enviarMensaje()">Enviar</button>
+      </div>
+    </div>
+
+    <!-- 👥 Panel lateral (usuarios conectados) -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">
+          Usuarios Conectados
+        </div>
+        <div class="card-body" id="usuariosConectados" style="height: 450px; overflow-y: auto;">
+          <p class="text-muted">Esperando conexiones...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Socket.IO -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  const chatBox = document.getElementById("chatBox");
+  const usuariosConectados = document.getElementById("usuariosConectados");
+  const adminName = "Admin";
+
+  // 🔵 Unir admin al chat
+  socket.emit("join_chat", { username: adminName });
+
+  // 📤 Enviar mensaje
+  function enviarMensaje() {
+    const input = document.getElementById("inputChat");
+    const mensaje = input.value.trim();
+    if (mensaje === "") return;
+
+    agregarMensaje(adminName, mensaje, true);
+    socket.emit("send_message", { user: adminName, message: mensaje });
+    input.value = "";
+  }
+
+  // 📥 Recibir mensaje
+  socket.on("receive_message", (data) => {
+    const esAdmin = data.user === adminName;
+    agregarMensaje(data.user, data.message, esAdmin);
+  });
+
+  // 🖥️ Mensajes del servidor (entradas/salidas)
+  socket.on("server_message", (data) => {
+    const msg = document.createElement("div");
+    msg.classList.add("text-center", "text-muted", "mt-2", "small");
+    msg.textContent = data.message;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  });
+
+  // 🧩 Función para agregar mensaje al chat
+  function agregarMensaje(user, message, esAdmin) {
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("mensaje", "mt-2", esAdmin ? "text-end" : "text-start");
+
+    const msgContent = document.createElement("div");
+    msgContent.classList.add("d-inline-block", "p-2", "rounded-3", esAdmin ? "bg-success-subtle" : "bg-white", "shadow-sm");
+    msgContent.innerHTML = `<strong>${user}:</strong> ${message}`;
+
+    msgDiv.appendChild(msgContent);
+    chatBox.appendChild(msgDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // ⚙️ Usuarios conectados (solo visual, sin backend)
+  let usuarios = new Set();
+
+  socket.on("server_message", (data) => {
+    const texto = data.message;
+    const match = texto.match(/(.+) se unió al chat/);
+    if (match) {
+      usuarios.add(match[1]);
+      actualizarUsuarios();
+    }
+  });
+
+  function actualizarUsuarios() {
+    usuariosConectados.innerHTML = "";
+    if (usuarios.size === 0) {
+      usuariosConectados.innerHTML = "<p class='text-muted'>Nadie conectado todavía</p>";
+      return;
+    }
+
+    usuarios.forEach(u => {
+      const item = document.createElement("div");
+      item.classList.add("border-bottom", "py-2");
+      item.innerHTML = `<i class="bi bi-person-circle text-primary me-2"></i>${u}`;
+      usuariosConectados.appendChild(item);
+    });
+  }
+</script>
+
+<!-- Bootstrap Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock %}

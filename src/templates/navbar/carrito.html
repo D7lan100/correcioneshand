@@ -3,93 +3,92 @@
 {% block title %}Carrito de Compras{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">🛒 Carrito de Compras</h2>
+<div class="container mt-5">
+    <h2 class="mb-4 text-center">🛒 Carrito de Compras</h2>
 
-  {% if productos %}
-  <table class="table table-bordered table-hover text-center align-middle">
-    <thead class="table-dark">
-      <tr>
-        <th>Imagen</th>
-        <th>Producto</th>
-        <th>Precio</th>
-        <th>Cantidad</th>
-        <th>Subtotal</th>
-        <th>Personalización</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in productos %}
-      <tr>
-        <td>
-          {% if item.imagen %}
-            <img src="{{ url_for('static', filename='uploads/' ~ item.imagen) }}" 
-                 alt="{{ item.nombre }}" width="70" class="rounded">
-          {% else %}
-            <span class="text-muted">Sin imagen</span>
-          {% endif %}
-        </td>
-        <td>{{ item.nombre }}</td>
-        <td>${{ "%.2f"|format(item.precio) }}</td>
-        <td>{{ item.cantidad }}</td>
-        <td><strong>${{ "%.2f"|format(item.subtotal) }}</strong></td>
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-        <!-- 🧩 Personalización -->
-        <td class="text-start">
-          {% if item.texto %}
-            <p><i class="bi bi-pencil"></i> <strong>Texto:</strong> {{ item.texto }}</p>
-          {% endif %}
-          {% if item.plantilla %}
-            <p><i class="bi bi-flower3"></i> <strong>Plantilla:</strong> 
-              {{ item.plantilla | truncate(60, True, '...') }}
-            </p>
-          {% endif %}
-          {% if item.boceto %}
-            <p><i class="bi bi-image"></i> 
-              <a href="{{ url_for('static', filename=item.boceto.replace('src\\static\\', '').replace('src/static/', '')) }}"
-                 target="_blank" class="btn btn-sm btn-outline-primary">
-                 Ver imagen
-              </a>
-            </p>
-          {% endif %}
-          {% if item.formulario %}
-            <p><i class="bi bi-ui-checks"></i> <strong>Formulario:</strong> Enviado</p>
-          {% endif %}
-          {% if not item.texto and not item.plantilla and not item.boceto and not item.formulario %}
-            <span class="text-muted">Sin personalización</span>
-          {% endif %}
-        </td>
+    {% if productos %}
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center shadow-sm">
+            <thead class="table-primary">
+                <tr>
+                    <th>Imagen</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Total</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in productos %}
+                <tr>
+                    <!-- ✅ Imagen del producto (maneja enlaces externos y locales) -->
+                    <td>
+                        {% if detalle.producto.imagen %}
+                            {% if 'http' in detalle.producto.imagen %}
+                                <img src="{{ detalle.producto.imagen }}" width="80" height="80" class="rounded">
+                            {% else %}
+                                <img src="{{ url_for('static', filename='uploads/' ~ detalle.producto.imagen) }}" width="80" height="80" class="rounded">
+                            {% endif %}
+                        {% else %}
+                            <img src="{{ url_for('static', filename='img/default.png') }}" width="80" height="80" class="rounded">
+                        {% endif %}
+                    </td>
 
-        <!-- Botones de acción -->
-        <td>
-          <form action="{{ url_for('carrito_bp.eliminar', id_detalle=item.id_detalle) }}" method="POST" style="display:inline;">
-            <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-          </form>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+                    <!-- Nombre -->
+                    <td class="fw-semibold">{{ detalle.producto.nombre }}</td>
 
-  <!-- 🔹 Total, vaciar y finalizar -->
-  <div class="d-flex justify-content-between align-items-center mt-3">
-    <h4>Total: <strong>${{ "%.2f"|format(total) }}</strong></h4>
-    <div>
-      <form action="{{ url_for('carrito_bp.vaciar') }}" method="POST" style="display:inline;">
-        <button type="submit" class="btn btn-warning">Vaciar Carrito</button>
-      </form>
-      <form action="{{ url_for('carrito_bp.checkout') }}" method="POST" style="display:inline;">
-        <button type="submit" class="btn btn-success">Finalizar Compra</button>
-      </form>
+                    <!-- Cantidad -->
+                    <td>
+                        <form action="{{ url_for('carrito_bp.actualizar_cantidad', id_detalle=detalle.id_detalle) }}" method="POST" class="d-flex justify-content-center align-items-center">
+                            <input type="number" name="cantidad" value="{{ detalle.cantidad }}" min="1" class="form-control form-control-sm text-center" style="width: 80px;">
+                            <button type="submit" class="btn btn-sm btn-outline-primary ms-2">Actualizar</button>
+                        </form>
+                    </td>
+
+                    <!-- Precio unitario -->
+                    <td>${{ "%.2f"|format(detalle.producto.precio) }}</td>
+
+                    <!-- Total -->
+                    <td class="fw-bold text-success">${{ "%.2f"|format(detalle.precio_total) }}</td>
+
+                    <!-- Eliminar producto -->
+                    <td>
+                        <form action="{{ url_for('carrito_bp.eliminar_producto', id_detalle=detalle.id_detalle) }}" method="POST">
+                            <button type="submit" class="btn btn-sm btn-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-  </div>
 
-  {% else %}
-  <div class="alert alert-info text-center">
-    Tu carrito está vacío. 
-    <a href="{{ url_for('productos_bp.productos') }}" class="alert-link">Ver productos</a>
-  </div>
-  {% endif %}
+    <!-- ✅ Total y botón de compra -->
+    <div class="d-flex justify-content-end align-items-center mt-4">
+        <h4 class="me-3">Total: <span class="text-success">${{ "%.2f"|format(total) }}</span></h4>
+        <form action="{{ url_for('carrito_bp.finalizar_compra') }}" method="POST">
+            <button type="submit" class="btn btn-success btn-lg shadow-sm">Finalizar Compra</button>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- ✅ Carrito vacío -->
+    <div class="alert alert-info text-center mt-5">
+        Tu carrito está vacío. <a href="{{ url_for('productos_bp.productos') }}" class="alert-link">Ver productos</a>.
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

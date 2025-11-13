@@ -3,230 +3,362 @@
 from src.models.entities.Productos import Producto
 
 class ModelProducto:
-    
+
+    # ============================================================
+    # Obtener todos los productos
+    # ============================================================
     @classmethod
     def get_all(cls, db):
-        """
-        Obtiene todos los productos de la base de datos
-        
-        Args:
-            db: Conexión a la base de datos MySQL
-            
-        Returns:
-            List[Producto]: Lista de objetos Producto
-        """
+        """Obtiene todos los productos y videotutoriales"""
         try:
             cursor = db.connection.cursor()
             sql = """SELECT id_producto, nombre, descripcion, precio, imagen, 
                             id_categoria, id_vendedor, disponible, 
-                            es_personalizable, calificacion_promedio 
-                     FROM productos
-                     ORDER BY nombre"""
+                            es_personalizable, calificacion_promedio,
+                            nivel_dificultad, duracion, herramientas, instrucciones,
+                            tipo_video, url_video, archivo_video
+                    FROM productos
+                    ORDER BY nombre"""
             cursor.execute(sql)
             rows = cursor.fetchall()
-            
+            cursor.close()
+
+            productos = []
+            for row in rows:
+                if row[15] is None:  # tipo_video == None → producto normal
+                    producto = Producto(
+                        id_producto=row[0],
+                        nombre=row[1],
+                        descripcion=row[2],
+                        precio=row[3],
+                        imagen=row[4],
+                        id_categoria=row[5],
+                        id_vendedor=row[6],
+                        disponible=row[7],
+                        es_personalizable=row[8],
+                        calificacion_promedio=row[9]
+                    )
+                else:  # es un videotutorial
+                    producto = Producto(
+                        id_producto=row[0],
+                        nombre=row[1],
+                        descripcion=row[2],
+                        precio=row[3],
+                        imagen=row[4],
+                        id_categoria=row[5],
+                        id_vendedor=row[6],
+                        disponible=row[7],
+                        es_personalizable=row[8],
+                        calificacion_promedio=row[9],
+                        nivel_dificultad=row[10],
+                        duracion=row[11],
+                        herramientas=row[12],
+                        instrucciones=row[13],
+                        tipo_video=row[14],
+                        url_video=row[15],
+                        archivo_video=row[16]
+                    )
+                productos.append(producto)
+            return productos
+
+        except Exception as ex:
+            print(f"Error en get_all: {ex}")
+            raise Exception(f"Error al obtener productos: {ex}")
+        
+    # ============================================================
+    # Obtener productos destacados (para carrusel del index)
+    # ============================================================
+    @classmethod
+    def obtener_mas_populares(cls, db, limit=9):
+        """Obtiene los productos más destacados o populares"""
+        try:
+            cursor = db.connection.cursor()
+            sql = """SELECT id_producto, nombre, descripcion, precio, imagen, 
+                            id_categoria, id_vendedor, disponible, 
+                            es_personalizable, calificacion_promedio,
+                            nivel_dificultad, duracion, herramientas, instrucciones,
+                            tipo_video, url_video, archivo_video
+                    FROM productos
+                    WHERE disponible = 1 AND imagen IS NOT NULL
+                    ORDER BY calificacion_promedio DESC, nombre ASC
+                    LIMIT %s"""
+            cursor.execute(sql, (limit,))
+            rows = cursor.fetchall()
+            cursor.close()
+
             productos = []
             for row in rows:
                 producto = Producto(
                     id_producto=row[0],
-                    nombre=row[1], 
-                    descripcion=row[2], 
-                    precio=row[3], 
+                    nombre=row[1],
+                    descripcion=row[2],
+                    precio=row[3],
                     imagen=row[4],
-                    id_categoria=row[5], 
-                    id_vendedor=row[6], 
-                    disponible=row[7], 
-                    es_personalizable=row[8], 
-                    calificacion_promedio=row[9]
+                    id_categoria=row[5],
+                    id_vendedor=row[6],
+                    disponible=row[7],
+                    es_personalizable=row[8],
+                    calificacion_promedio=row[9],
+                    nivel_dificultad=row[10],
+                    duracion=row[11],
+                    herramientas=row[12],
+                    instrucciones=row[13],
+                    tipo_video=row[14],
+                    url_video=row[15],
+                    archivo_video=row[16]
                 )
-                # Agregar stock como alias de disponible
-                producto.stock = producto.disponible
                 productos.append(producto)
-            
-            cursor.close()
             return productos
-            
-        except Exception as ex:
-            print(f"Error en get_all: {ex}")
-            raise Exception(f"Error al obtener productos: {ex}")
 
+        except Exception as ex:
+            print(f"Error en obtener_mas_populares: {ex}")
+            return []
+
+    # ============================================================
+    # Obtener producto por ID
+    # ============================================================
     @classmethod
     def get_by_id(cls, db, id_producto):
-        """
-        Obtiene un producto específico por su ID
-        
-        Args:
-            db: Conexión a la base de datos MySQL
-            id_producto: ID del producto a buscar
-            
-        Returns:
-            Producto: Objeto Producto o None si no se encuentra
-        """
+        """Obtiene un producto o videotutorial por su ID"""
         try:
             cursor = db.connection.cursor()
             sql = """SELECT id_producto, nombre, descripcion, precio, imagen, 
                             id_categoria, id_vendedor, disponible, 
-                            es_personalizable, calificacion_promedio 
-                     FROM productos 
-                     WHERE id_producto = %s"""
+                            es_personalizable, calificacion_promedio,
+                            nivel_dificultad, duracion, herramientas, instrucciones,
+                            tipo_video, url_video, archivo_video
+                    FROM productos
+                    WHERE id_producto = %s
+                    LIMIT 1"""
+            id_producto = int(id_producto)
             cursor.execute(sql, (id_producto,))
             row = cursor.fetchone()
             cursor.close()
-            
-            if row:
+
+            if not row:
+                return None
+
+            # ✅ Detecta si es un producto normal o un videotutorial
+            if row[15] is None:
                 producto = Producto(
                     id_producto=row[0],
-                    nombre=row[1], 
-                    descripcion=row[2], 
-                    precio=row[3], 
+                    nombre=row[1],
+                    descripcion=row[2],
+                    precio=row[3],
                     imagen=row[4],
-                    id_categoria=row[5], 
-                    id_vendedor=row[6], 
-                    disponible=row[7], 
-                    es_personalizable=row[8], 
+                    id_categoria=row[5],
+                    id_vendedor=row[6],
+                    disponible=row[7],
+                    es_personalizable=row[8],
                     calificacion_promedio=row[9]
                 )
-                # Agregar stock como alias de disponible
-                producto.stock = producto.disponible
-                return producto
-            return None
-            
+            else:
+                producto = Producto(
+                    id_producto=row[0],
+                    nombre=row[1],
+                    descripcion=row[2],
+                    precio=row[3],
+                    imagen=row[4],
+                    id_categoria=row[5],
+                    id_vendedor=row[6],
+                    disponible=row[7],
+                    es_personalizable=row[8],
+                    calificacion_promedio=row[9],
+                    nivel_dificultad=row[10],
+                    duracion=row[11],
+                    herramientas=row[12],
+                    instrucciones=row[13],
+                    tipo_video=row[14],
+                    url_video=row[15],
+                    archivo_video=row[16]
+                )
+
+            return producto
+
         except Exception as ex:
             print(f"Error en get_by_id: {ex}")
             raise Exception(f"Error al obtener producto {id_producto}: {ex}")
 
+    # ============================================================
+    # Obtener productos por categoría
+    # ============================================================
     @classmethod
     def get_by_categoria(cls, db, id_categoria):
-        """
-        Obtiene productos por categoría
-        
-        Args:
-            db: Conexión a la base de datos MySQL
-            id_categoria: ID de la categoría
-            
-        Returns:
-            List[Producto]: Lista de productos de la categoría
-        """
+        """Obtiene productos o videotutoriales filtrados por categoría"""
         try:
             cursor = db.connection.cursor()
             sql = """SELECT id_producto, nombre, descripcion, precio, imagen, 
                             id_categoria, id_vendedor, disponible, 
-                            es_personalizable, calificacion_promedio 
-                     FROM productos 
-                     WHERE id_categoria = %s AND disponible = 1
-                     ORDER BY nombre"""
+                            es_personalizable, calificacion_promedio,
+                            nivel_dificultad, duracion, herramientas, instrucciones,
+                            tipo_video, url_video, archivo_video
+                    FROM productos
+                    ORDER BY nombre"""
             cursor.execute(sql, (id_categoria,))
             rows = cursor.fetchall()
             cursor.close()
-            
+
             productos = []
             for row in rows:
-                producto = Producto(
-                    id_producto=row[0],
-                    nombre=row[1], 
-                    descripcion=row[2], 
-                    precio=row[3], 
-                    imagen=row[4],
-                    id_categoria=row[5], 
-                    id_vendedor=row[6], 
-                    disponible=row[7], 
-                    es_personalizable=row[8], 
-                    calificacion_promedio=row[9]
-                )
-                # Agregar stock como alias de disponible
-                producto.stock = producto.disponible
+                if row[15] is None:  # tipo_video == None → producto normal
+                    producto = Producto(
+                        id_producto=row[0],
+                        nombre=row[1],
+                        descripcion=row[2],
+                        precio=row[3],
+                        imagen=row[4],
+                        id_categoria=row[5],
+                        id_vendedor=row[6],
+                        disponible=row[7],
+                        es_personalizable=row[8],
+                        calificacion_promedio=row[9]
+                    )
+                else:  # es un videotutorial
+                    producto = Producto(
+                        id_producto=row[0],
+                        nombre=row[1],
+                        descripcion=row[2],
+                        precio=row[3],
+                        imagen=row[4],
+                        id_categoria=row[5],
+                        id_vendedor=row[6],
+                        disponible=row[7],
+                        es_personalizable=row[8],
+                        calificacion_promedio=row[9],
+                        nivel_dificultad=row[10],
+                        duracion=row[11],
+                        herramientas=row[12],
+                        instrucciones=row[13],
+                        tipo_video=row[14],
+                        url_video=row[15],
+                        archivo_video=row[16]
+                    )
+                producto.nombre_usuario = row[7] or "Administrador"
                 productos.append(producto)
-            
             return productos
-            
+
         except Exception as ex:
             print(f"Error en get_by_categoria: {ex}")
             raise Exception(f"Error al obtener productos de categoría {id_categoria}: {ex}")
 
+    # ============================================================
+    # Buscar productos
+    # ============================================================
     @classmethod
     def search(cls, db, termino):
-        """
-        Busca productos por término en nombre o descripción
-        
-        Args:
-            db: Conexión a la base de datos MySQL
-            termino: Término de búsqueda
-            
-        Returns:
-            List[Producto]: Lista de productos que coinciden con la búsqueda
-        """
+        """Busca productos o videotutoriales por nombre o descripción"""
         try:
             cursor = db.connection.cursor()
             sql = """SELECT id_producto, nombre, descripcion, precio, imagen, 
                             id_categoria, id_vendedor, disponible, 
-                            es_personalizable, calificacion_promedio 
-                     FROM productos 
-                     WHERE (nombre LIKE %s OR descripcion LIKE %s) 
-                     AND disponible = 1
-                     ORDER BY nombre"""
+                            es_personalizable, calificacion_promedio,
+                            nivel_dificultad, duracion, herramientas, instrucciones,
+                            tipo_video, url_video, archivo_video
+                    FROM productos
+                    ORDER BY nombre"""
             termino_busqueda = f"%{termino}%"
             cursor.execute(sql, (termino_busqueda, termino_busqueda))
             rows = cursor.fetchall()
             cursor.close()
-            
+
             productos = []
             for row in rows:
-                producto = Producto(
-                    id_producto=row[0],
-                    nombre=row[1], 
-                    descripcion=row[2], 
-                    precio=row[3], 
-                    imagen=row[4],
-                    id_categoria=row[5], 
-                    id_vendedor=row[6], 
-                    disponible=row[7], 
-                    es_personalizable=row[8], 
-                    calificacion_promedio=row[9]
-                )
-                # Agregar stock como alias de disponible
-                producto.stock = producto.disponible
+                if row[15] is None:  # tipo_video == None → producto normal
+                    producto = Producto(
+                        id_producto=row[0],
+                        nombre=row[1],
+                        descripcion=row[2],
+                        precio=row[3],
+                        imagen=row[4],
+                        id_categoria=row[5],
+                        id_vendedor=row[6],
+                        disponible=row[7],
+                        es_personalizable=row[8],
+                        calificacion_promedio=row[9]
+                    )
+                else:  # es un videotutorial
+                    producto = Producto(
+                        id_producto=row[0],
+                        nombre=row[1],
+                        descripcion=row[2],
+                        precio=row[3],
+                        imagen=row[4],
+                        id_categoria=row[5],
+                        id_vendedor=row[6],
+                        disponible=row[7],
+                        es_personalizable=row[8],
+                        calificacion_promedio=row[9],
+                        nivel_dificultad=row[10],
+                        duracion=row[11],
+                        herramientas=row[12],
+                        instrucciones=row[13],
+                        tipo_video=row[14],
+                        url_video=row[15],
+                        archivo_video=row[16]
+                    )
                 productos.append(producto)
-            
             return productos
-            
+
         except Exception as ex:
             print(f"Error en search: {ex}")
             raise Exception(f"Error al buscar productos: {ex}")
 
+    # ============================================================
+    # Crear un videotutorial
+    # ============================================================
     @classmethod
-    def update_stock(cls, db, id_producto, nuevo_stock):
-        """
-        Actualiza el stock (disponible) de un producto
-        
-        Args:
-            db: Conexión a la base de datos MySQL
-            id_producto: ID del producto
-            nuevo_stock: Nuevo valor del stock
-            
-        Returns:
-            bool: True si se actualizó correctamente
-        """
+    def create_video_tutorial(cls, db, nombre, descripcion, instrucciones, tipo_video, url_video, archivo_video, id_vendedor, es_personalizable=True):
+        """Crea un nuevo videotutorial"""
         try:
             cursor = db.connection.cursor()
-            sql = "UPDATE productos SET disponible = %s WHERE id_producto = %s"
-            cursor.execute(sql, (nuevo_stock, id_producto))
+            sql = """INSERT INTO productos
+                     (nombre, descripcion, precio, imagen, id_categoria, id_vendedor,
+                      disponible, es_personalizable, instrucciones, tipo_video,
+                      url_video, archivo_video)
+                     VALUES (%s, %s, %s, %s, 4, %s, 1, %s, %s, %s, %s, %s)"""
+            cursor.execute(sql, (
+                nombre, descripcion, 0.00, None, id_vendedor, es_personalizable,
+                instrucciones, tipo_video, url_video, archivo_video
+            ))
             db.connection.commit()
             cursor.close()
             return True
-            
+
+        except Exception as ex:
+            print(f"Error al crear videotutorial: {ex}")
+            db.connection.rollback()
+            return False
+
+    # ============================================================
+    # Actualizar stock o disponibilidad
+    # ============================================================
+    @classmethod
+    def update_stock(cls, db, id_producto, nuevo_stock):
+        try:
+            cursor = db.connection.cursor()
+            cursor.execute("UPDATE productos SET disponible = %s WHERE id_producto = %s", (nuevo_stock, id_producto))
+            db.connection.commit()
+            cursor.close()
+            return True
         except Exception as ex:
             print(f"Error al actualizar stock: {ex}")
             return False
-        
+
+    # ============================================================
+    # Actualizar un producto o videotutorial
+    # ============================================================
     @classmethod
-    def update(cls, db, id_producto, nombre, precio, disponible, es_personalizable, id_categoria, imagen):
+    def update(cls, db, id_producto, nombre, descripcion, disponible, es_personalizable, id_categoria, imagen, instrucciones=None, tipo_video=None, url_video=None):
         try:
             cursor = db.connection.cursor()
             sql = """UPDATE productos
-                     SET nombre=%s, precio=%s, disponible=%s, 
-                         es_personalizable=%s, id_categoria=%s, imagen=%s
+                     SET nombre=%s, descripcion=%s, disponible=%s, es_personalizable=%s,
+                         id_categoria=%s, imagen=%s, instrucciones=%s, tipo_video=%s, url_video=%s
                      WHERE id_producto=%s"""
-            cursor.execute(sql, (nombre, precio, disponible, es_personalizable, id_categoria, imagen, id_producto))
+            cursor.execute(sql, (
+                nombre, descripcion, disponible, es_personalizable, id_categoria,
+                imagen, instrucciones, tipo_video, url_video, id_producto
+            ))
             db.connection.commit()
             cursor.close()
             return True
@@ -235,15 +367,18 @@ class ModelProducto:
             db.connection.rollback()
             return False
 
+    # ============================================================
+    # Eliminar un producto o videotutorial
+    # ============================================================
     @staticmethod
     def delete(db, id_producto):
         try:
             cursor = db.connection.cursor()
             cursor.execute("DELETE FROM productos WHERE id_producto = %s", (id_producto,))
             db.connection.commit()
-            filas_eliminadas = cursor.rowcount
+            filas = cursor.rowcount
             cursor.close()
-            return filas_eliminadas > 0
+            return filas > 0
         except Exception as e:
             print(f"Error al eliminar producto: {e}")
             return False

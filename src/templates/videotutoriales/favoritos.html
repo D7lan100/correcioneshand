@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Mis Favoritos{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4"><i class="bi bi-heart-fill text-danger"></i> Mis Favoritos</h2>
+  {% if favoritos %}
+    <div class="row">
+      {% for f in favoritos %}
+        <div class="col-md-4 mb-4">
+          <div class="card shadow-sm">
+            <img src="{{ f.imagen or '/static/img/default.jpg' }}" class="card-img-top" alt="{{ f.nombre }}">
+            <div class="card-body">
+              <h5 class="card-title">{{ f.nombre }}</h5>
+              <p class="card-text">${{ "%.2f"|format(f.precio) }}</p>
+              <form action="{{ url_for('favoritos_bp.eliminar_favorito', id_producto=f.id_producto) }}" method="post">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">💔 Quitar</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">Aún no tienes favoritos guardados.</div>
+  {% endif %}
+</div>
+{% endblock %}

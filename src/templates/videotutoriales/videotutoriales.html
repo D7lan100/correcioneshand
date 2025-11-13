@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Videotutoriales - HandiGenius{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2 class="text-center mb-4"><i class="bi bi-camera-reels me-2"></i> Videotutoriales</h2>
+
+  {% if videotutoriales %}
+  <div class="row g-4">
+    {% for v in videotutoriales %}
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+          {% if v.url_video %}
+            <div class="ratio ratio-16x9">
+              <iframe src="{{ v.url_video | replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+            </div>
+          {% elif v.archivo_video %}
+            <video class="w-100" controls>
+              <source src="{{ url_for('static', filename='videotutoriales_usuarios/' 
+
+~ v.archivo_video) }}">
+              Tu navegador no soporta videos HTML5.
+            </video>
+          {% else %}
+            <img src="{{ url_for('static', filename='img/default_video.jpg') }}" class="card-img-top" alt="Sin video">
+          {% endif %}
+          
+          <div class="card-body">
+            <h5 class="card-title">{{ v.nombre }}</h5>
+            <p class="card-text">{{ v.descripcion }}</p>
+            {% if v.instrucciones %}
+              <p><strong>📝 Instrucciones:</strong> {{ v.instrucciones }}</p>
+            {% endif %}
+            <p><strong>🎯 Tipo:</strong> {{ v.tipo|capitalize }}</p>
+            <p><strong>👤 Subido por:</strong> {{ v.id_usuario or 'Admin' }}</p>
+            <p><strong>🔧 Personalizable:</strong> {{ 'Sí' if v.es_personalizable else 'No' }}</p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="alert alert-info text-center">Aún no hay videotutoriales disponibles.</div>
+  {% endif %}
+</div>
+{% endblock %}

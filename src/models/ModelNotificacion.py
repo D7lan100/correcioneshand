@@ -1,4 +1,5 @@
 # src/models/ModelNotificacion.py
+
 from datetime import datetime
 
 class ModelNotificacion:

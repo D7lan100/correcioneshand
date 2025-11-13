@@ -85,9 +85,10 @@
       border-radius: 10px;
       display: inline-block;
       max-width: 70%;
+      word-wrap: break-word;
     }
-    .usuario { background: #CCE6FF; }
-    .bot { background: #E6E6E6; }
+    .usuario { background: #CCE6FF; align-self: flex-end; }
+    .bot { background: #E6E6E6; align-self: flex-start; }
 </style>
 {% endblock %}
 
@@ -97,23 +98,10 @@
 
   <!-- Opciones -->
   <div class="d-flex flex-wrap justify-content-center gap-4">
-    <div class="opcion" onclick="mostrar('form')">Documento de contacto</div>
     <div class="opcion" onclick="mostrar('numero')">Número de contacto</div>
-    <div class="opcion" onclick="mostrar('pqr')">Enviar PQR</div>
+    <div class="opcion" onclick="mostrar('pqr')">Documento de Contacto</div>
     <div class="opcion" onclick="mostrar('faq')">Preguntas frecuentes</div>
-    <div class="opcion" onclick="mostrar('chat')">Chat en vivo+</div>
-  </div>
-
-  <!-- Formulario -->
-  <div id="form" class="card-custom hidden text-start mt-4">
-    <h4>Formulario de contacto</h4>
-    <form id="formContacto">
-      <input type="text" id="nombre" placeholder="Nombre" required>
-      <input type="email" id="correo" placeholder="Correo electrónico" required>
-      <textarea id="mensaje" maxlength="2000" rows="5" placeholder="Escribe tu mensaje..." required></textarea>
-      <button type="submit" class="btn btn-primary mt-2">Enviar</button>
-    </form>
-    <p id="respuesta" class="hidden mt-3 text-success"></p>
+    <div class="opcion" onclick="mostrar('chat')">Chat en vivo</div>
   </div>
 
   <!-- Número de contacto -->
@@ -132,21 +120,68 @@
   <!-- PQR -->
   <div id="pqr" class="card-custom hidden">
     <h4>Enviar PQR</h4>
-    <textarea class="form-control" rows="5" placeholder="Describe tu petición, queja o reclamo..."></textarea>
-    <button class="btn btn-primary mt-2">Enviar PQR</button>
+    <button onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfGZPXyBhu7YIBO7_eVrZjyxjmv53ZA23bg_qOqhV4PGrrPgg/viewform?usp=dialog', '_blank')">
+      Documento de Contacto
+    </button>
   </div>
 
-  <!-- FAQ -->
+  <!-- ✅ FAQ COMPLETA -->
   <div id="faq" class="card-custom hidden text-start">
-    <h4>Preguntas Frecuentes</h4>
-    <p><strong>¿Horario de atención?</strong><br> Lunes a Sábado de 8 a.m a 6 p.m.</p>
-    <p><strong>¿Tiempo de respuesta?</strong><br> Máximo 48 horas hábiles.</p>
+    <h4 class="mb-3">Preguntas Frecuentes</h4>
+    <div class="accordion" id="faqAccordion">
+      {% for i in range(1, 16) %}
+      {% set preguntas = [
+        "¿Qué es Hand&Genius?",
+        "¿Cómo puedo registrarme en Hand&Genius?",
+        "¿Puedo comprar sin registrarme?",
+        "¿Qué tipo de productos personalizados ofrecen?",
+        "¿Cómo funciona la personalización de productos?",
+        "¿Los tutoriales son gratuitos?",
+        "¿Qué beneficios tiene la suscripción?",
+        "¿Cómo puedo pagar mis compras?",
+        "¿Realizan envíos a todo el país?",
+        "¿Cuánto tarda en llegar mi pedido?",
+        "¿Puedo cancelar o modificar un pedido?",
+        "¿Cómo hago una sugerencia sobre la plataforma?",
+        "¿Qué hago si tengo un problema con mi pedido?",
+        "¿Puedo compartir mis tutoriales o creaciones?",
+        "¿Cómo participo en talleres o eventos?"
+      ] %}
+      {% set respuestas = [
+        "Hand&Genius es una plataforma donde puedes crear y personalizar regalos únicos y aprender con tutoriales exclusivos de manualidades.",
+        "Solo necesitas tu correo electrónico y una contraseña; luego confirmas tu cuenta por correo.",
+        "No, para garantizar la seguridad y el seguimiento de pedidos es necesario tener una cuenta.",
+        "Ofrecemos ramos, peluches, cartas, cuadros, kits DIY y más, todos personalizables.",
+        "Cada producto tiene un formulario donde eliges texto, colores, imágenes y detalles.",
+        "Algunos sí, pero los exclusivos requieren una suscripción activa.",
+        "Descuentos, tutoriales premium, prioridad en pedidos y acceso a talleres.",
+        "Aceptamos tarjetas, PSE, Nequi y Daviplata.",
+        "Sí, enviamos a cualquier ciudad de Colombia mediante empresas aliadas.",
+        "Entre 3 y 7 días hábiles, dependiendo de la personalización.",
+        "Sí, antes de que entre en producción; contáctanos desde tu perfil.",
+        "Desde tu perfil, sección “Sugerencias de la comunidad”.",
+        "Contáctanos desde la sección “Contacto” o tu perfil para asistencia.",
+        "Sí, los usuarios registrados pueden compartir sus ideas y proyectos.",
+        "Consulta el calendario en tu panel de usuario para registrarte."
+      ] %}
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="q{{ i }}">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ i }}">
+            {{ preguntas[i-1] }}
+          </button>
+        </h2>
+        <div id="a{{ i }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body">{{ respuestas[i-1] }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
   </div>
 
-  <!-- Chat -->
+  <!-- ✅ CHAT EN VIVO -->
   <div id="chat" class="card-custom hidden">
-    <h4>Chat en Vivo+</h4>
-    <div class="chat-box" id="chatBox">
+    <h4>Chat en Vivo</h4>
+    <div class="chat-box d-flex flex-column" id="chatBox">
       <div class="mensaje bot">👋 ¡Hola! Bienvenido al chat de soporte. ¿En qué puedo ayudarte?</div>
     </div>
     <div class="d-flex mt-3">
@@ -156,19 +191,26 @@
   </div>
 </div>
 
+<!-- ✅ CHAT SOCKET.IO -->
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
+const socket = io();
+
+// Mostrar secciones
 function mostrar(id) {
-  const secciones = ["form","numero","pqr","faq","chat"];
+  const secciones = ["numero","pqr","faq","chat"];
   secciones.forEach(sec => document.getElementById(sec).classList.add("hidden"));
   document.getElementById(id).classList.remove("hidden");
 }
 
+// Copiar número
 function copiarNumero() {
   const numero = document.getElementById("telefono").innerText;
   navigator.clipboard.writeText(numero);
   alert("Número copiado: " + numero);
 }
 
+// Verificar horario de atención
 function verificarHorario() {
   const estado = document.getElementById("estado");
   const ahora = new Date();
@@ -184,37 +226,45 @@ function verificarHorario() {
 }
 verificarHorario();
 
-document.getElementById("formContacto").addEventListener("submit", function(e){
-  e.preventDefault();
-  const nombre = document.getElementById("nombre").value.trim();
-  const correo = document.getElementById("correo").value.trim();
-  const mensaje = document.getElementById("mensaje").value.trim();
-  if (!nombre || !correo || !mensaje) { alert("Todos los campos son obligatorios."); return; }
-  if (!/^[^@]+@[^@]+\.[a-zA-Z]{2,}$/.test(correo)) { alert("Correo inválido."); return; }
-  document.getElementById("respuesta").innerText =
-    "Tu mensaje ha sido recibido. Responderemos en máximo 48 horas.";
-  document.getElementById("respuesta").classList.remove("hidden");
-  this.reset();
-});
+// Conexión al chat
+socket.emit('join_chat', { username: 'Usuario' });
 
+// Enviar mensaje
 function enviarMensaje() {
   const input = document.getElementById("inputChat");
   const chatBox = document.getElementById("chatBox");
   const mensaje = input.value.trim();
   if (mensaje === "") return;
+
   const msgUsuario = document.createElement("div");
-  msgUsuario.classList.add("mensaje","usuario");
+  msgUsuario.classList.add("mensaje", "usuario");
   msgUsuario.textContent = mensaje;
   chatBox.appendChild(msgUsuario);
-  setTimeout(() => {
-    const msgBot = document.createElement("div");
-    msgBot.classList.add("mensaje","bot");
-    msgBot.textContent = "✅ Hemos recibido tu mensaje. Un asesor responderá pronto.";
-    chatBox.appendChild(msgBot);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }, 1000);
+
+  socket.emit('send_message', { user: 'Usuario', message: mensaje });
+
   input.value = "";
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+// Recibir mensajes
+socket.on('receive_message', (data) => {
+  if (data.user === 'Usuario') return;
+  const chatBox = document.getElementById("chatBox");
+  const msg = document.createElement("div");
+  msg.classList.add("mensaje", data.user === 'Admin' ? 'bot' : 'usuario');
+  msg.textContent = `${data.user}: ${data.message}`;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
+socket.on('server_message', (data) => {
+  const chatBox = document.getElementById("chatBox");
+  const msgSistema = document.createElement("div");
+  msgSistema.classList.add("mensaje", "bot");
+  msgSistema.textContent = data.message;
+  chatBox.appendChild(msgSistema);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
 </script>
 {% endblock %}

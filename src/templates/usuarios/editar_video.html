@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Editar Videotutorial{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="card shadow-lg p-4">
+    <h3 class="text-center mb-4">✏ Editar Videotutorial</h3>
+
+    <form method="POST" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">Título</label>
+        <input type="text" class="form-control" name="titulo" value="{{ video[1] }}" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Descripción</label>
+        <textarea class="form-control" name="descripcion" rows="3" required>{{ video[2] }}</textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Tipo de video</label>
+          <select class="form-select" name="tipo_video">
+            <option value="publico" {% if video[3] == 'publico' %}selected{% endif %}>Público</option>
+            <option value="privado" {% if video[3] == 'privado' %}selected{% endif %}>Privado</option>
+            <option value="premium" {% if video[3] == 'premium' %}selected{% endif %}>Premium</option>
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Nivel de dificultad</label>
+          <select class="form-select" name="nivel_dificultad">
+            <option value="Básico" {% if video[4] == 'Básico' %}selected{% endif %}>Básico</option>
+            <option value="Intermedio" {% if video[4] == 'Intermedio' %}selected{% endif %}>Intermedio</option>
+            <option value="Avanzado" {% if video[4] == 'Avanzado' %}selected{% endif %}>Avanzado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Duración</label>
+        <input type="text" class="form-control" name="duracion" value="{{ video[5] }}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Herramientas</label>
+        <input type="text" class="form-control" name="herramientas" value="{{ video[6] }}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Instrucciones</label>
+        <textarea class="form-control" name="instrucciones" rows="3">{{ video[7] }}</textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Imagen actual:</label><br>
+        {% if video[8] %}
+          <img src="{{ video[8] }}" alt="Miniatura" width="200" class="rounded mb-2">
+        {% else %}
+          <p class="text-muted">Sin miniatura.</p>
+        {% endif %}
+        <input type="file" class="form-control" name="imagen" accept="image/*">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">URL de YouTube (opcional)</label>
+        <input type="url" class="form-control" name="url_video" value="{{ video[9] or '' }}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Reemplazar archivo de video (opcional)</label>
+        <input type="file" class="form-control" name="archivo" accept="video/*">
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">
+        💾 Guardar Cambios
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -41,7 +41,7 @@
                 N/A
               {% endif %}
             </td>
-            <td>{{ producto.id_categoria or '-' }}</td>
+            <td>{{ producto.categoria_nombre or 'Sin categoría' }}</td>
             <td>
               {% if producto.disponible %}
                 <span class="badge bg-success">Sí</span>
@@ -57,7 +57,7 @@
               {% endif %}
             </td>
 
-            <!-- 🔹 BOTONES BONITOS -->
+            <!-- 🔹 BOTONES -->
             <td class="text-center">
               <div class="d-flex justify-content-center gap-2">
                 <button class="btn btn-sm btn-primary edit-btn d-flex align-items-center gap-1"
@@ -118,7 +118,12 @@
             </div>
             <div class="col-md-6">
               <label>Categoría</label>
-              <input type="number" name="id_categoria" class="form-control">
+              <select name="id_categoria" class="form-select">
+                <option value="">Seleccionar categoría</option>
+                {% for c in categorias %}
+                  <option value="{{ c.id_categoria }}">{{ c.nombre }}</option>
+                {% endfor %}
+              </select>
             </div>
             <div class="col-md-6">
               <label>Imagen (URL)</label>
@@ -174,6 +179,19 @@
               <textarea name="descripcion" id="modal-descripcion" class="form-control" rows="2"></textarea>
             </div>
             <div class="col-md-6">
+              <label>Categoría</label>
+              <select name="id_categoria" id="modal-categoria" class="form-select">
+                <option value="">Seleccionar categoría</option>
+                {% for c in categorias %}
+                  <option value="{{ c.id_categoria }}">{{ c.nombre }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Imagen (URL)</label>
+              <input type="text" name="imagen" id="modal-imagen" class="form-control">
+            </div>
+            <div class="col-md-6">
               <label>Disponible</label>
               <select name="disponible" id="modal-disponible" class="form-select">
                 <option value="1">Sí</option>
@@ -186,14 +204,6 @@
                 <option value="1">Sí</option>
                 <option value="0">No</option>
               </select>
-            </div>
-            <div class="col-md-6">
-              <label>Categoría</label>
-              <input type="number" name="id_categoria" id="modal-categoria" class="form-control">
-            </div>
-            <div class="col-md-6">
-              <label>Imagen (URL)</label>
-              <input type="text" name="imagen" id="modal-imagen" class="form-control">
             </div>
           </div>
         </div>

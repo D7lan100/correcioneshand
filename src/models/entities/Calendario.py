@@ -1,3 +1,5 @@
+# src/models/entities/Calendario.py
+
 class Calendario:
     def __init__(self, id_evento=None, nombre_evento=None, descripcion=None, fecha_evento=None, id_usuario=None):
         self.id_evento = id_evento

@@ -16,22 +16,33 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     .nav-tabs {
+        display: flex;
+        flex-wrap: wrap;
         justify-content: center;
-        margin-bottom: 1.5rem;
+        gap: 0.5rem;
         border-bottom: none;
     }
+
+    .nav-tabs .nav-item {
+        flex: 1 1 calc(33.333% - 1rem); /* 3 pestañas por fila */
+        min-width: 150px;
+    }
+
     .nav-tabs .nav-link {
+        width: 100%;
+        text-align: center;
         font-weight: 500;
         color: #555;
         border: 1px solid #dee2e6;
-        margin: 0 0.25rem;
         border-radius: 0.5rem 0.5rem 0 0;
         background-color: #e9ecef;
         transition: 0.3s;
     }
+
     .nav-tabs .nav-link:hover {
         background-color: #d4d9df;
     }
+
     .nav-tabs .nav-link.active {
         color: #fff;
         background: linear-gradient(135deg, #0080FF, #3399FF);
@@ -52,6 +63,53 @@
         font-weight: 600;
         margin-top: 0.5rem;
     }
+    /* 🔧 Forzar estilo limpio en selects */
+    select.form-select {
+        background-color: #ffffff !important;
+        color: #212529 !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 6px;
+        box-shadow: none !important;
+        -webkit-box-shadow: none !important;
+        -moz-box-shadow: none !important;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image: none !important; /* elimina flecha nativa con degradado */
+        padding-right: 2rem;
+        position: relative;
+        z-index: 2;
+    }
+
+    /* 🔽 Evita el fondo negro del menú desplegable */
+    select.form-select option {
+        background-color: #fff !important;
+        color: #212529 !important;
+    }
+
+    /* 🔘 Corrige la franja negra en algunos navegadores (pseudoelementos) */
+    select.form-select::-ms-expand {
+        display: none;
+    }
+    select.form-select:focus {
+        outline: none !important;
+        border-color: #80bdff !important;
+        box-shadow: 0 0 0 0.25rem rgba(0,123,255,.25) !important;
+    }
+
+    /* 🩶 Evita franja negra debajo (Chrome bug visual) */
+    select.form-select::after,
+    select.form-select::before {
+        content: none !important;
+        background: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Si hay un wrapper o div que genera la sombra */
+    .mb-3 select.form-select {
+        background-clip: padding-box !important;
+        overflow: visible !important;
+    }
 </style>
 {% endblock %}
 
@@ -59,7 +117,19 @@
 <div class="profile-container my-5">
     <h2 class="text-center mb-4">Configuración de Perfil</h2>
 
-    <!-- TABS -->
+    <!-- Mensajes Flash -->
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+        {% for categoria, mensaje in mensajes %}
+          <div class="alert alert-{{ 'success' if categoria=='success' else 'info' }} alert-dismissible fade show" role="alert">
+            {{ mensaje }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Tabs -->
     <ul class="nav nav-tabs" id="profileTabs" role="tablist">
         <li class="nav-item">
             <button class="nav-link active" id="perfil-tab" data-bs-toggle="tab" data-bs-target="#perfil" type="button" role="tab">
@@ -79,6 +149,16 @@
         <li class="nav-item">
             <button class="nav-link" id="sugerencias-tab" data-bs-toggle="tab" data-bs-target="#sugerencias" type="button" role="tab">
                 <i class="bi bi-lightbulb me-1"></i> Mis Sugerencias
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="misvideos-tab" data-bs-toggle="tab" data-bs-target="#misvideos" type="button" role="tab">
+                <i class="bi bi-collection-play me-1"></i> Mis Videotutoriales
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="misproductos-tab" data-bs-toggle="tab" data-bs-target="#misproductos" type="button" role="tab">
+                <i class="bi bi-box-seam me-1"></i> Mis Productos
             </button>
         </li>
     </ul>
@@ -114,7 +194,7 @@
 
         <!-- SUBIR PRODUCTOS -->
         <div class="tab-pane fade" id="productos" role="tabpanel">
-            <form id="form-producto" enctype="multipart/form-data">
+            <form action="{{ url_for('usuarios_bp.subir_producto') }}" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                 <div class="mb-3">
@@ -124,7 +204,7 @@
 
                 <div class="mb-3">
                     <label class="form-label">Descripción</label>
-                    <textarea class="form-control" name="descripcion" rows="3" placeholder="Describe tu producto..."></textarea>
+                    <textarea class="form-control" name="descripcion" rows="3" required></textarea>
                 </div>
 
                 <div class="mb-3">
@@ -135,9 +215,9 @@
                 <div class="mb-3">
                     <label class="form-label">Categoría</label>
                     <select class="form-select" name="id_categoria" required>
-                        <option value="">Selecciona una categoría</option>
+                        <option value="" disabled selected>Selecciona una categoría</option>
                         {% for categoria in categorias %}
-                            {% if categoria.nombre != 'Tutorial' %}
+                            {% if categoria.id_categoria != 4 %}
                                 <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
                             {% endif %}
                         {% endfor %}
@@ -145,164 +225,204 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Imagen del Producto</label>
+                    <label class="form-label">Imagen</label>
                     <input type="file" class="form-control" name="imagen" accept="image/*">
                 </div>
 
                 <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" name="disponible" value="1" checked>
-                    <label class="form-check-label">Disponible para la venta</label>
+                    <input class="form-check-input" type="checkbox" name="disponible" checked>
+                    <label class="form-check-label">Disponible</label>
                 </div>
 
                 <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" name="es_personalizable" value="1">
-                    <label class="form-check-label">Es personalizable</label>
+                    <input class="form-check-input" type="checkbox" name="es_personalizable">
+                    <label class="form-check-label">Es Personalizable</label>
                 </div>
 
                 <button type="submit" class="btn btn-success w-100">Subir Producto</button>
             </form>
         </div>
 
+
         <!-- SUBIR VIDEOS -->
         <div class="tab-pane fade" id="videos" role="tabpanel">
-            <form action="{{ url_for('api_bp.api_eventos') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ url_for('usuarios_bp.subir_video') }}" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- Título -->
                 <div class="mb-3">
-                    <label class="form-label">Título del Video</label>
-                    <input type="text" class="form-control" name="titulo">
+                    <label class="form-label">Título del Videotutorial</label>
+                    <input type="text" class="form-control" name="titulo" required>
                 </div>
+
+                <!-- Descripción -->
                 <div class="mb-3">
                     <label class="form-label">Descripción</label>
-                    <textarea class="form-control" name="descripcion"></textarea>
+                    <textarea class="form-control" name="descripcion" rows="2" required></textarea>
                 </div>
+
+                <!-- Tipo y Nivel de dificultad -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tipo de video</label>
+                        <select class="form-select" name="tipo" required>
+                            <option value="" disabled selected>Selecciona tipo</option>
+                            <option value="publico">Público</option>
+                            <option value="privado">Privado</option>
+                            <option value="premium">Premium</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nivel de dificultad</label>
+                        <select class="form-select" name="nivel_dificultad" required>
+                            <option value="" disabled selected>Selecciona nivel</option>
+                            <option value="Básico">Básico</option>
+                            <option value="Intermedio">Intermedio</option>
+                            <option value="Avanzado">Avanzado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Duración y Herramientas -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Duración</label>
+                        <input type="text" class="form-control" name="duracion" placeholder="Ej: 10 minutos">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Herramientas necesarias</label>
+                        <input type="text" class="form-control" name="herramientas" placeholder="Tijeras, cinta, flores...">
+                    </div>
+                </div>
+
+                <!-- Instrucciones -->
                 <div class="mb-3">
-                    <label class="form-label">Tipo</label>
-                    <select class="form-select" name="tipo">
-                        <option value="publico">Público</option>
-                        <option value="privado">Privado</option>
-                        <option value="premium">Premium</option>
-                    </select>
+                    <label class="form-label">Instrucciones</label>
+                    <textarea class="form-control" name="instrucciones" rows="3" placeholder="Describe los pasos principales del tutorial..."></textarea>
                 </div>
+
+                <!-- Video o URL -->
                 <div class="mb-3">
-                    <label class="form-label">URL o archivo del video</label>
-                    <input type="text" class="form-control mb-2" name="url">
-                    <input type="file" class="form-control" name="archivo">
+                    <label class="form-label">Sube el video o pega una URL de YouTube</label>
+                    <input type="file" class="form-control mb-2" name="archivo" accept="video/*">
+                    <input type="url" class="form-control" name="url" placeholder="https://youtube.com/...">
                 </div>
-                <button type="submit" class="btn btn-warning w-100">Subir Video</button>
+
+                <!-- Miniatura -->
+                <div class="mb-3">
+                    <label class="form-label">Miniatura del videotutorial</label>
+                    <input type="file" class="form-control" name="imagen" accept="image/*">
+                </div>
+
+                <button type="submit" class="btn btn-warning w-100">
+                    <i class="bi bi-upload"></i> Subir Videotutorial
+                </button>
             </form>
         </div>
 
-        <!-- SUGERENCIAS -->
         <div class="tab-pane fade" id="sugerencias" role="tabpanel">
             <h5 class="mb-3 text-center"><i class="bi bi-lightbulb"></i> Mis Sugerencias</h5>
-            {% if sugerencias_usuario %}
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center align-middle">
-                        <thead class="table-primary">
-                            <tr>
-                                <th>Título</th>
-                                <th>Descripción</th>
-                                <th>Fecha</th>
-                                <th>Estado</th>
-                                <th>Retroalimentación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for s in sugerencias_usuario %}
-                            <tr>
-                                <td>{{ s.titulo }}</td>
-                                <td>{{ s.descripcion }}</td>
-                                <td>{{ s.fecha_envio.strftime('%Y-%m-%d') }}</td>
-                                <td>
-                                    {% if s.estado == 'pendiente' %}
-                                        <span class="badge bg-warning text-dark">Pendiente</span>
-                                    {% elif s.estado == 'aceptada' %}
-                                        <span class="badge bg-success">Aceptada</span>
-                                    {% else %}
-                                        <span class="badge bg-danger">Rechazada</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ s.retroalimentacion or 'Sin retroalimentación' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="alert alert-info text-center">Aún no has enviado sugerencias.</div>
+
+            <!-- 🆕 Notificación si hay retroalimentaciones nuevas -->
+            {% if nuevas_retroalimentaciones %}
+            <div class="alert alert-success alert-dismissible fade show text-center" role="alert">
+                <i class="bi bi-bell-fill"></i>
+                ¡Tienes nuevas retroalimentaciones en tus sugerencias!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
             {% endif %}
+
+            {% if sugerencias_usuario %}
+            <div class="table-responsive">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>Título</th>
+                            <th>Descripción</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Retroalimentación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sugerencias_usuario %}
+                        <tr>
+                            <td>{{ s.titulo }}</td>
+                            <td>{{ s.descripcion }}</td>
+                            <td>{{ s.fecha_envio.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if s.estado == 'pendiente' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                {% elif s.estado == 'aceptada' %}
+                                    <span class="badge bg-success">Aceptada</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Rechazada</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ s.retroalimentacion or 'Sin retroalimentación' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">Aún no has enviado sugerencias.</div>
+            {% endif %}
+        </div>
+
+        <!-- 🎬 MIS VIDEOTUTORIALES -->
+        <div class="tab-pane fade" id="misvideos" role="tabpanel">
+            <h5 class="mb-3 text-center"><i class="bi bi-collection-play"></i> Mis Videotutoriales</h5>
+
+            <div class="text-center mb-3">
+                <a href="{{ url_for('usuarios_bp.mis_videos') }}" class="btn btn-primary">
+                    <i class="bi bi-arrow-right-circle"></i> Ver todos mis videos
+                </a>
+            </div>
+
+            <p class="text-muted text-center">Aquí puedes revisar y gestionar tus videotutoriales subidos.</p>
+            <p class="text-center">
+                <i class="bi bi-info-circle text-secondary"></i> Si deseas editar o eliminar un video, entra al panel de gestión.
+            </p>
+        </div>
+
+        <div class="tab-pane fade" id="misproductos" role="tabpanel">
+        <h5 class="mb-3"><i class="bi bi-box-seam"></i> Mis Productos</h5>
+        <div class="row">
+            {% for p in productos_usuario %}
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm">
+                <img src="{{ p.imagen or url_for('static', filename='img/default_product.jpg') }}" class="card-img-top" alt="{{ p.nombre }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ p.nombre }}</h5>
+                    <p class="card-text text-muted">{{ p.descripcion }}</p>
+                    <p><strong>${{ "%.2f"|format(p.precio) }}</strong></p>
+                    <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('productos_bp.detalle_producto', id=p.id_producto) }}" class="btn btn-primary btn-sm">Ver</a>
+                    <a href="{{ url_for('usuarios_bp.editar_producto', id_producto=p.id_producto) }}" class="btn btn-warning btn-sm"><i class="bi bi-pencil"></i></a>
+                    </div>
+                </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if not productos_usuario %}
+            <div class="alert alert-info text-center mt-3">Aún no has subido productos.</div>
+        {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ✅ JS PARA MANEJAR SUBIDA DE PRODUCTOS Y ALERTA GLOBAL -->
 <script>
-document.getElementById('form-producto').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    const form = e.target;
-    const formData = new FormData(form);
-
-    try {
-        const response = await fetch("{{ url_for('api_bp.api_productos') }}", {
-            method: "POST",
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            mostrarFlash('success', data.mensaje || 'Producto agregado correctamente.');
-            form.reset();
-        } else {
-            mostrarFlash('danger', data.error || 'Error al agregar el producto.');
-        }
-    } catch (error) {
-        mostrarFlash('warning', '⚠ No se pudo conectar con el servidor.');
-        console.error("Error:", error);
-    }
-});
-
-// ✅ Usa el contenedor global del base.html
-function mostrarFlash(tipo, mensaje) {
-    let flashContainer = document.getElementById('flashContainer');
-
-    // Si no existe (por seguridad), se crea
-    if (!flashContainer) {
-        flashContainer = document.createElement('div');
-        flashContainer.id = 'flashContainer';
-        flashContainer.style.position = 'fixed';
-        flashContainer.style.top = '90px';
-        flashContainer.style.right = '20px';
-        flashContainer.style.zIndex = '9999';
-        flashContainer.style.maxWidth = '350px';
-        document.body.appendChild(flashContainer);
-    }
-
-    const alert = document.createElement('div');
-    alert.className = `alert alert-${tipo} alert-dismissible fade show shadow-lg mb-2`;
-    alert.setAttribute('role', 'alert');
-    alert.style.animation = 'slideIn 0.3s ease';
-    alert.innerHTML = `
-        <strong>
-            ${tipo === 'danger' ? '<i class="bi bi-exclamation-triangle-fill me-2"></i>Error' :
-              tipo === 'success' ? '<i class="bi bi-check-circle-fill me-2"></i>Éxito' :
-              tipo === 'warning' ? '<i class="bi bi-exclamation-circle-fill me-2"></i>Atención' :
-              '<i class="bi bi-info-circle-fill me-2"></i>Información'}
-        </strong>
-        <p class="mb-0 mt-1">${mensaje}</p>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    flashContainer.appendChild(alert);
-
-    // Desaparece con animación
-    setTimeout(() => {
-        alert.style.animation = 'fadeOut 0.3s ease';
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 300);
-    }, 5000);
-}
+    // Inicializar tabs Bootstrap 5
+    var triggerTabList = [].slice.call(document.querySelectorAll('#profileTabs button'))
+    triggerTabList.forEach(function (triggerEl) {
+        var tabTrigger = new bootstrap.Tab(triggerEl)
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault()
+            tabTrigger.show()
+        })
+    })
 </script>
 {% endblock %}
+

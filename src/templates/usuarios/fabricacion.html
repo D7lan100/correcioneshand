@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Fabricación - HandiGenius{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2 class="text-center mb-4">
+    <i class="bi bi-tools me-2"></i> Productos / Videotutoriales de Fabricación
+  </h2>
+
+  {% if error %}
+    <div class="alert alert-danger text-center">{{ error }}</div>
+  {% endif %}
+
+  {% if videotutoriales %}
+  <div class="row g-4">
+    {% for v in videotutoriales %}
+    <div class="col-md-4">
+      <div class="card h-100 shadow-sm">
+
+        {# Mostrar imagen o video #}
+        {% if v.imagen %}
+          {% if v.imagen.startswith('http') %}
+            <div class="ratio ratio-16x9">
+              <iframe
+                src="{{ v.imagen | replace('watch?v=', 'embed/') }}"
+                class="card-img-top"
+                allowfullscreen>
+              </iframe>
+            </div>
+          {% else %}
+            <video class="card-img-top" controls>
+              <source src="{{ url_for('static', filename='videotutoriales_usuarios/' ~ v.imagen) }}" type="video/mp4">
+              Tu navegador no soporta videos HTML5.
+            </video>
+          {% endif %}
+        {% else %}
+          <img src="{{ url_for('static', filename='img/default_video.jpg') }}" class="card-img-top" alt="Sin video">
+        {% endif %}
+
+        <div class="card-body">
+        <h5 class="card-title">{{ v.nombre }}</h5>
+        <p class="card-text">{{ v.descripcion }}</p>
+
+        <p class="mb-1">
+            <strong>Categoría:</strong> {{ v.categoria if v.categoria else "Sin categoría" }}
+        </p>
+
+        <p class="mb-1">
+            <strong>Subido por:</strong> 
+            {% if v.usuario %}
+            {{ v.usuario }}
+            {% else %}
+            <em>Administrador</em>
+            {% endif %}
+        </p>
+
+        <p>
+            <strong>Personalizable:</strong> {{ 'Sí' if v.es_personalizable else 'No' }}
+        </p>
+
+        <p class="mb-0">
+            <strong>Precio:</strong> ${{ v.precio }}
+        </p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="alert alert-info text-center">Aún no hay productos o videotutoriales subidos.</div>
+  {% endif %}
+</div>
+{% endblock %}
+

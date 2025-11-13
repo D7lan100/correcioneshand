@@ -1,19 +1,21 @@
+# src/models/entities/User.py
+
 from werkzeug.security import check_password_hash
 from flask_login import UserMixin
 
 class User(UserMixin):
-    def __init__(self, id_usuario, correo_electronico, contraseña=None, nombre_completo="", id_rol=None):
+    def __init__(self, id_usuario, correo_electronico, contraseña=None, nombre_completo="", id_rol=None, telefono=None, direccion=None):
         self.id_usuario = id_usuario
         self.correo_electronico = correo_electronico
         self.contraseña = contraseña
         self.nombre_completo = nombre_completo
         self.id_rol = id_rol
+        self.telefono = None
+        self.direccion = None
 
-    # ✅ Flask-Login requiere get_id() para manejar sesiones
     def get_id(self):
         return str(self.id_usuario)
 
-    # ✅ Propiedad extra para compatibilidad con current_user.id
     @property
     def id(self):
         return self.id_usuario

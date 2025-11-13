@@ -24,7 +24,7 @@
   <!-- Card para enviar sugerencia -->
   <div class="card shadow-lg border-0 mb-5 rounded-4">
     <div class="card-body p-4">
-      <h5 class="mb-3 fw-semibold text-primary">✍ Envía tu sugerencia</h5>
+      <h5 class="mb-3 fw-semibold text-primary">Envía tu sugerencia</h5>
       <form method="POST" action="{{ url_for('sugerencias_bp.enviar_sugerencia') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -39,19 +39,19 @@
         </div>
 
         <button type="submit" class="btn btn-primary w-100 fw-semibold">
-          🚀 Enviar sugerencia
+          Enviar sugerencia
         </button>
       </form>
     </div>
   </div>
   {% else %}
     <div class="alert alert-warning text-center shadow-sm rounded-3">
-      🔐 Debes <a href="{{ url_for('auth_bp.login') }}" class="alert-link">iniciar sesión</a> para enviar una sugerencia.
+      Debes <a href="{{ url_for('auth_bp.login') }}" class="alert-link">iniciar sesión</a> para enviar una sugerencia.
     </div>
   {% endif %}
 
   <div class="text-center mb-4">
-    <h4 class="fw-bold text-success">🌟 Sugerencias Aceptadas</h4>
+    <h4 class="fw-bold text-success">Sugerencias Aceptadas</h4>
     <p class="text-muted">Estas son las ideas que se han implementado o están en desarrollo.</p>
   </div>
 

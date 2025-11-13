@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Continuar compra{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2 class="mb-4 text-center">🛒 Resumen de tu compra</h2>
+
+  <!-- 🧍 Información del usuario -->
+  {% if usuario %}
+  <div class="card mb-4 shadow-sm border-0 rounded-3">
+    <div class="card-body">
+      <h5 class="card-title mb-3">👤 Datos del usuario</h5>
+      <p><strong>Nombre:</strong> {{ usuario.nombre }}</p>
+      <p><strong>Correo:</strong> {{ usuario.correo }}</p>
+      <p><strong>Teléfono:</strong> {{ usuario.telefono }}</p>
+      <p><strong>Dirección:</strong> {{ usuario.direccion }}</p>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-warning">
+    ⚠️ No se han encontrado los datos del usuario. Inicia sesión para continuar con la compra.
+  </div>
+  {% endif %}
+
+  <!-- 🧾 Tabla de productos -->
+  <div class="card shadow-sm border-0 rounded-3">
+    <div class="card-body">
+      <h5 class="card-title mb-3">🛍️ Productos en el carrito</h5>
+      {% if items %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Producto</th>
+              <th scope="col" class="text-center">Cantidad</th>
+              <th scope="col" class="text-end">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ item.nombre }}</td>
+              <td class="text-center">{{ item.cantidad }}</td>
+              <td class="text-end">${{ "%.2f"|format(item.subtotal) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Total -->
+      <div class="text-end mt-3">
+        <h4>Total: <span class="text-success">${{ "%.2f"|format(total) }}</span></h4>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="mt-4 text-end">
+        <form action="{{ url_for('carrito_bp.checkout') }}" method="GET" class="d-inline">
+          <button type="submit" class="btn btn-primary">
+            ✅ Confirmar compra
+          </button>
+        </form>
+        <form action="{{ url_for('carrito_bp.ver') }}" method="GET" class="d-inline">
+          <button type="submit" class="btn btn-outline-secondary">
+            ← Volver al carrito
+          </button>
+        </form>
+      </div>
+      {% else %}
+      <p class="text-muted">Tu carrito está vacío.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

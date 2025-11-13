@@ -1,0 +1,191 @@
+videotutorial_detalle
+{% extends "base.html" %}
+{% block title %}{{ video.nombre }} - Videotutorial{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  {% if error %}
+    <div class="alert alert-danger text-center">{{ error }}</div>
+  {% else %}
+    <div class="card shadow-lg border-0 rounded-4">
+      <div class="card-header text-white text-center rounded-top-4"
+           style="background: linear-gradient(135deg, #6a11cb, #2575fc);">
+        <h3 class="fw-bold">{{ video.nombre }}</h3>
+      </div>
+
+      <div class="card-body text-center">
+
+        <!-- 🎥 VIDEO -->
+        {% if video.url_video %}
+          <div class="ratio ratio-16x9 mb-4">
+            <iframe src="{{ video.url_video | replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+          </div>
+        {% elif video.archivo_video %}
+          <video class="w-100 mb-4 rounded" controls>
+            <source src="{{ url_for('static', filename='videotutoriales_usuarios/' ~ video.archivo_video) }}">
+          </video>
+        {% else %}
+          <div class="alert alert-secondary">
+            <i class="bi bi-camera-video-off"></i> No hay video disponible
+          </div>
+        {% endif %}
+
+        <!-- 👤 INFORMACIÓN GENERAL -->
+        <h4 class="text-primary mt-3">{{ video.nombre }}</h4>
+        <p class="mt-2 mb-1"><strong>👤 Usuario:</strong> {{ video.nombre_usuario or 'Administrador' }}</p>
+
+        <!-- 🔐 TIPO DE ACCESO -->
+        <p class="mb-1">
+          <strong>🔐 Tipo de acceso:</strong>
+          {% if video.tipo_video == 'publico' %}
+            <span class="badge bg-success">Público</span>
+          {% elif video.tipo_video == 'privado' %}
+            <span class="badge bg-secondary">Privado</span>
+          {% elif video.tipo_video == 'premium' %}
+            <span class="badge bg-warning text-dark">Premium</span>
+          {% else %}
+            <span class="badge bg-light text-muted">No definido</span>
+          {% endif %}
+        </p>
+
+        <!-- 🎯 NIVEL, ⏱ DURACIÓN, 🧰 HERRAMIENTAS -->
+        {% if video.nivel_dificultad %}
+          <p><strong>🎯 Nivel de dificultad:</strong> {{ video.nivel_dificultad }}</p>
+        {% endif %}
+        {% if video.duracion %}
+          <p><strong>⏱ Duración:</strong> {{ video.duracion }}</p>
+        {% endif %}
+        {% if video.herramientas %}
+          <p><strong>🧰 Herramientas necesarias:</strong> {{ video.herramientas }}</p>
+        {% endif %}
+
+        <!-- ⭐ CALIFICACIÓN -->
+        <div class="my-3">
+          <strong>⭐ Calificación:</strong>
+          {% for i in range(1, 6) %}
+            {% if i <= (video.calificacion_promedio or 0) %}
+              <i class="bi bi-star-fill text-warning"></i>
+            {% else %}
+              <i class="bi bi-star text-muted"></i>
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <hr class="my-4">
+
+        <div class="text-start">
+          <h5>⭐ Califica este videotutorial</h5>
+          <form method="POST" action="{{ url_for('videotutoriales_bp.calificar_video', id_video=video.id_producto) }}">
+            <div class="mb-3">
+              <label class="form-label">Tu puntuación</label>
+              <select class="form-select w-auto d-inline-block" name="puntuacion" required>
+                {% for i in range(1, 6) %}
+                  <option value="{{ i }}">{{ i }} ⭐</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <textarea name="comentario" class="form-control" placeholder="Escribe un comentario (opcional)..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-outline-primary">
+              <i class="bi bi-star-fill"></i> Enviar Calificación
+            </button>
+          </form>
+        </div>
+
+        <!-- INFORMACIÓN ADICIONAL -->
+        <div class="mt-4">
+
+          {% if video.herramientas %}
+            <div class="alert text-start mt-3" style="background-color:#fff3cd; border:1px solid #ffeeba;">
+              <strong>🧰 Herramientas necesarias:</strong>
+              <p class="mb-0">{{ video.herramientas }}</p>
+            </div>
+          {% endif %}
+
+          {% if video.instrucciones %}
+            <div class="alert text-start mt-3" style="background-color:#d1ecf1; border:1px solid #bee5eb;">
+              <strong>🧠 Instrucciones:</strong>
+              <p class="mb-0">{{ video.instrucciones }}</p>
+            </div>
+          {% endif %}
+
+          {% if video.descripcion %}
+            <div class="alert text-start mt-3" style="background-color:#f8f9fa; border:1px solid #dee2e6;">
+              <strong>📝 Descripción:</strong>
+              <p class="mb-0">{{ video.descripcion }}</p>
+            </div>
+          {% endif %}
+
+        </div>
+
+        {% if video.comentarios %}
+          <hr class="my-4">
+          <h5 class="mb-3">Comentarios de otros usuarios</h5>
+
+          {% for c in video.comentarios %}
+            <div class="border rounded-3 p-3 mb-3 bg-light">
+              <p class="mb-1"><strong>{{ c['nombre_usuario'] }}</strong> — 
+                {% for i in range(1, 6) %}
+                  {% if i <= c['puntuacion'] %}
+                    <i class="bi bi-star-fill text-warning"></i>
+                  {% else %}
+                    <i class="bi bi-star text-muted"></i>
+                  {% endif %}
+                {% endfor %}
+              </p>
+              <p class="text-muted mb-1">{{ c['comentario'] or 'Sin comentario' }}</p>
+              <small class="text-secondary">{{ c['fecha_calificacion'] }}</small>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if current_user.is_authenticated %}
+          <button 
+              class="btn btn-sm toggle-fav-btn {{ 'btn-outline-secondary' if video.id_producto in favoritos_usuario else 'btn-outline-danger' }}" 
+              data-id="{{ video.id_producto }}" 
+              data-favorito="{{ '1' if video.id_producto in favoritos_usuario else '0' }}">
+            {{ '💔 Quitar de Favoritos' if video.id_producto in favoritos_usuario else '❤ Agregar a Favoritos' }}
+          </button>
+        {% else %}
+          <p><a href="{{ url_for('auth_bp.login') }}">Inicia sesión</a> para guardar favoritos</p>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<script>
+document.addEventListener('click', async function(e) {
+  if (e.target.classList.contains('toggle-fav-btn')) {
+    const btn = e.target;
+    const id = btn.dataset.id;
+    const esFavorito = btn.dataset.favorito === "1";
+
+    const url = esFavorito 
+      ? /favoritos/eliminar/${id} 
+      : /favoritos/agregar/${id};
+
+    try {
+      const resp = await fetch(url, { method: "POST" });
+      if (resp.ok) {
+        // Cambiar el estado visual del botón
+        if (esFavorito) {
+          btn.textContent = "❤ Agregar a Favoritos";
+          btn.classList.remove("btn-outline-secondary");
+          btn.classList.add("btn-outline-danger");
+          btn.dataset.favorito = "0";
+        } else {
+          btn.textContent = "💔 Quitar de Favoritos";
+          btn.classList.remove("btn-outline-danger");
+          btn.classList.add("btn-outline-secondary");
+          btn.dataset.favorito = "1";
+        }
+      }
+    } catch (err) {
+      console.error("Error al actualizar favorito:", err);
+    }
+  }
+});
+</script>
+{% endblock %}
