@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Productos - Hand&Genius{% endblock %}
+{% block title %}Productos{% endblock %}
 
 {% block content %}
 <style>
@@ -172,6 +172,34 @@
   .search-input { border-radius: 15px; }
   .search-btn { border-radius: 15px; background: linear-gradient(135deg, #0080FF, #3399FF); border: none; color: white; }
   .search-btn:hover { background: linear-gradient(135deg, #0066CC, #2685E6); }
+  
+  /* Estilos de Paginación */
+  .pagination .page-link {
+    color: #0080FF;
+    border-radius: 10px;
+    margin: 0 3px;
+    transition: all 0.3s;
+    border: 1px solid #0080FF;
+  }
+
+  .pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #0080FF, #3399FF);
+    color: white;
+    border-color: #0080FF;
+    box-shadow: 0 4px 8px rgba(0,128,255,0.3);
+  }
+
+  .pagination .page-link:hover {
+    background-color: #f0f8ff;
+    border-color: #0080FF;
+    color: #0066CC;
+  }
+
+  .pagination .page-item.disabled .page-link {
+    color: #ccc;
+    border-color: #eee;
+    background-color: #fafafa;
+  }
 </style>
 
 <div class="container products-container">
@@ -185,8 +213,7 @@
     {% endif %}
   </h1>
 
-  <!-- Barra de búsqueda -->
-  <div class="search-container">
+    <div class="search-container">
     <form action="{{ url_for('productos_bp.buscar_productos') }}" method="GET" class="search-form">
       <div class="d-flex gap-3 justify-content-center">
         <input type="text" name="q" class="form-control search-input flex-grow-1" 
@@ -229,18 +256,10 @@
             </div>
 
             {% if producto.disponible %}
-              <!-- 🔹 Agregar al carrito (funciona para normales o personalizables) -->
-              <form action="{{ url_for('carrito_bp.agregar', id_producto=producto.id_producto) }}" 
-                    method="POST" class="form-add-cart">
-                <input type="hidden" name="texto_personalizado" value="">
-                <input type="hidden" name="imagen_personalizada" value="">
-                <input type="hidden" name="plantilla_seleccionada" value="">
-                <input type="hidden" name="formulario_seleccionado" value="">
-                <input type="number" name="cantidad" value="1" min="1" required>
-                <button type="submit" class="btn-cart">
-                  <i class="bi bi-cart-plus"></i> Agregar
-                </button>
-              </form>
+            <form action="{{ url_for('carrito_bp.agregar', id_producto=producto.id_producto) }}" method="POST" class="form-add-cart">
+              <input type="number" name="cantidad" value="1" min="1" required>
+              <button type="submit" class="btn-cart"><i class="bi bi-cart-plus"></i> Agregar</button>
+            </form>
             {% endif %}
 
             <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="btn-details mt-auto">
@@ -250,6 +269,44 @@
         </div>
       {% endfor %}
     </div>
+
+    {% if pagination and pagination.pages > 1 %}
+    <div class="row mt-5">
+      <div class="col-12">
+        <nav aria-label="Navegación de productos">
+          <ul class="pagination justify-content-center">
+            
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+              <a class="page-link" href="{% if pagination.has_prev %}{{ url_for_pagination(pagination.prev_num) }}{% else %}#{% endif %}" aria-label="Anterior">
+                <span aria-hidden="true">&laquo;</span>
+                <span class="sr-only">Anterior</span>
+              </a>
+            </li>
+            
+            {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=1, right_current=2) %}
+              {% if page_num %}
+                {% if page_num == pagination.page %}
+                  <li class="page-item active" aria-current="page"><a class="page-link" href="#">{{ page_num }}</a></li>
+                {% else %}
+                  <li class="page-item"><a class="page-link" href="{{ url_for_pagination(page_num) }}">{{ page_num }}</a></li>
+                {% endif %}
+              {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+              {% endif %}
+            {% endfor %}
+            
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+              <a class="page-link" href="{% if pagination.has_next %}{{ url_for_pagination(pagination.next_num) }}{% else %}#{% endif %}" aria-label="Siguiente">
+                <span aria-hidden="true">&raquo;</span>
+                <span class="sr-only">Siguiente</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+    {% endif %}
+    
   {% else %}
     <div class="no-products-alert mt-4">
       <i class="bi bi-search"></i>

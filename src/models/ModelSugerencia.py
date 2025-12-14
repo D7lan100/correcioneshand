@@ -1,7 +1,9 @@
 # src/models/ModelSugerencia.py
 
 from datetime import datetime
-import MySQLdb.cursors  # ✅ Necesario para usar DictCursor
+import MySQLdb.cursors
+from types import SimpleNamespace
+
 
 class ModelSugerencia:
 
@@ -74,7 +76,7 @@ class ModelSugerencia:
         return data
 
     # -----------------------------------------------------
-    # Cambiar estado de sugerencia (aceptar / rechazar)
+    # Cambiar estado de sugerencia (aceptar / rechazar / volver a pendiente)
     # -----------------------------------------------------
     @classmethod
     def cambiar_estado(cls, db, id_sugerencia, nuevo_estado, retroalimentacion=None):
@@ -96,6 +98,33 @@ class ModelSugerencia:
             db.connection.rollback()
             print(f"❌ Error al cambiar estado: {ex}")
             return False
+
+    # -----------------------------------------------------
+    # Obtener una sugerencia por ID (para notificaciones / edición)
+    # -----------------------------------------------------
+    @classmethod
+    def get_by_id(cls, db, id_sugerencia):
+        """
+        Devuelve una sugerencia específica como objeto SimpleNamespace (acceso con .atributo)
+        o None si no existe.
+        """
+        try:
+            cursor = db.connection.cursor(MySQLdb.cursors.DictCursor)
+            cursor.execute("""
+                SELECT id_sugerencia, id_usuario, titulo, descripcion, estado, retroalimentacion, 
+                       fecha_envio, likes, dislikes
+                FROM sugerencias
+                WHERE id_sugerencia = %s
+                LIMIT 1
+            """, (id_sugerencia,))
+            row = cursor.fetchone()
+            cursor.close()
+            if not row:
+                return None
+            return SimpleNamespace(**row)
+        except Exception as ex:
+            print(f"❌ Error en get_by_id ModelSugerencia: {ex}")
+            return None
 
     # -----------------------------------------------------
     # Obtener sugerencias aceptadas (para vista pública)
@@ -178,13 +207,9 @@ class ModelSugerencia:
 
             # Actualizar contador en sugerencias
             if tipo_voto == 'like':
-                cursor.execute("""
-                    UPDATE sugerencias SET likes = likes + 1 WHERE id_sugerencia = %s
-                """, (id_sugerencia,))
+                cursor.execute("UPDATE sugerencias SET likes = likes + 1 WHERE id_sugerencia = %s", (id_sugerencia,))
             elif tipo_voto == 'dislike':
-                cursor.execute("""
-                    UPDATE sugerencias SET dislikes = dislikes + 1 WHERE id_sugerencia = %s
-                """, (id_sugerencia,))
+                cursor.execute("UPDATE sugerencias SET dislikes = dislikes + 1 WHERE id_sugerencia = %s", (id_sugerencia,))
 
             db.connection.commit()
             cursor.close()

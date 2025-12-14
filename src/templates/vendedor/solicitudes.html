@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-5">
+    <h2><i class="bi bi-inbox-fill"></i> Solicitudes de Personalización</h2>
+    <p>Aquí puedes revisar y responder a las solicitudes de tus clientes.</p>
+    
+    {% if solicitudes %}
+        {% for item in solicitudes %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>Pedido #{{ item.id_pedido }}</strong> - Producto: <strong>{{ item.nombre_producto }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-7">
+                        <h5 class="card-title">Detalles de Personalización (ID Detalle: {{ item.id_detalle }})</h5>
+                        <p><strong>Comprador:</strong> {{ item.nombre_comprador }}</p>
+                        <p><strong>Cantidad:</strong> {{ item.cantidad }}</p>
+                        
+                        <!-- Muestra TODOS los campos de personalización -->
+                        
+                        {% if item.texto_personalizado %}
+                            <p class="mb-1"><strong>Texto:</strong> {{ item.texto_personalizado | nl2br }}</p>
+                        {% endif %}
+                        
+                        {% if item.imagen_personalizada %}
+                            <p class="mb-1"><strong>Boceto:</strong> 
+                                <!-- 🛑 CORRECCIÓN DE RUTA para la imagen 
+                                    Asumo que item.imagen_personalizada contiene: 'personalizacion/bocetos_usuarios/IMG_1309.PNG'
+                                    y que la llamada original que falló fue porque se estaba pasando mal.
+                                    Usamos item.imagen_personalizada directamente, esperando que contenga la ruta correcta relativa a static.
+                                -->
+                                <a href="{{ url_for('static', filename=item.imagen_personalizada) }}" target="_blank">Ver imagen</a>
+                            </p>
+                        {% endif %}
+
+                        {% if item.plantilla_seleccionada %}
+                            <div class="alert alert-light border p-2 mt-2">
+                                <small><strong>Plantilla Seleccionada:</strong>
+                                    {% if item.plantilla_seleccionada is mapping %}
+                                        <ul class="mb-0">
+                                        {% for k, v in item.plantilla_seleccionada.items() %}
+                                            {% if 'url' not in k %}
+                                                <li><strong>{{ k|capitalize }}:</strong> {{ v }}</li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <pre class="mb-0">{{ item.plantilla_seleccionada }}</pre>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+
+                        {% if item.formulario_seleccionado %}
+                             <div class="alert alert-light border p-2 mt-2">
+                                 <small><strong>Formulario:</strong>
+                                    {% if item.formulario_seleccionado is mapping %}
+                                        <ul class="mb-0">
+                                        {% for k, v in item.formulario_seleccionado.items() %}
+                                            <li><strong>{{ k|capitalize }}:</strong> {{ v }}</li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <pre class="mb-0">{{ item.formulario_seleccionado }}</pre>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endif %}
+                        
+                        <hr class="d-md-none">
+                    </div>
+                    
+                    <div class="col-md-5 border-start-md">
+                        <h5 class="card-title">Respuesta del Vendedor</h5>
+                        <!-- Añadir un ID al formulario para el script de confirmación -->
+                        <form id="formRespuesta-{{ item.id_detalle }}" action="{{ url_for('vendedor_bp.responder_solicitud') }}" method="POST" class="vendedor-respuesta-form">
+                            <!-- Este es el ID del detalle que se actualizará -->
+                            <input type="hidden" name="id_detalle" value="{{ item.id_detalle }}">
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Mensaje de Retroalimentación</strong></label>
+                                <textarea name="mensaje_vendedor" class="form-control" rows="3" placeholder="Ej: ¡Claro! Es posible, pero el costo aumentará...">{{ item.feedback_vendedor if item.feedback_vendedor }}</textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><strong>Nuevo Precio Propuesto</strong></label>
+                                    <input type="number" name="precio_propuesto" class="form-control" value="{{ item.precio_propuesto if item.precio_propuesto }}" placeholder="Precio unitario final">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"><strong>Acción</strong></label>
+                                    <select name="estado_vendedor" class="form-select" required>
+                                        <!-- Marcar la opción actual como seleccionada -->
+                                        <option value="pendiente" {% if item.estado_vendedor == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                        <option value="cotizado" {% if item.estado_vendedor == 'cotizado' %}selected{% endif %}>Aprobar (Cotizar)</option>
+                                        <option value="aprobado" {% if item.estado_vendedor == 'aprobado' %}selected{% endif %}>Aprobar (Mismo Precio)</option>
+                                        <option value="rechazado" {% if item.estado_vendedor == 'rechazado' %}selected{% endif %}>Rechazar Solicitud</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Enviar Respuesta</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">No tienes solicitudes pendientes.</div>
+    {% endif %}
+</div>
+
+<script>
+    // 2. Script de Confirmación con SweetAlert2 para el Vendedor
+    document.querySelectorAll('.vendedor-respuesta-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Detiene el envío inicial
+            const currentForm = this;
+            const action = currentForm.querySelector('select[name="estado_vendedor"]').value;
+            let title = '¿Estás seguro de enviar esta respuesta?';
+            let text = '';
+            
+            if (action === 'cotizado') {
+                const precio = currentForm.querySelector('input[name="precio_propuest "]').value;
+                if (!precio || parseFloat(precio) <= 0) {
+                    Swal.fire('Error', 'Debes ingresar un precio propuesto válido para cotizar.', 'error');
+                    return;
+                }
+                text = El cliente recibirá una cotización con el nuevo precio propuesto de $${precio}.;
+            } else if (action === 'aprobado') {
+                text = 'Confirmas que la personalización es viable y el precio se mantiene.';
+            } else if (action === 'rechazado') {
+                text = 'Se rechazará la solicitud de personalización, el cliente deberá modificar o eliminar el ítem.';
+            }
+
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí, enviar respuesta',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Si el usuario confirma, envía el formulario
+                    currentForm.submit();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

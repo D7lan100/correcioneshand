@@ -1,109 +1,135 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
-from src.models.ModelSuscripcion import ModelSuscripcion
-from src.models.entities.Suscripcion import Suscripcion
-from datetime import date, timedelta
+from werkzeug.utils import secure_filename
+from datetime import datetime
 import os
+from src.models.ModelSuscripcion import ModelSuscripcion
 
-suscripciones_bp = Blueprint('suscripciones_bp', __name__, url_prefix='/suscripciones')
+suscripciones_bp = Blueprint('suscripciones_bp', __name__)
 
 
-# 🟢 Listar los planes disponibles
+# ===============================
+# LISTAR PLANES
+# ===============================
 @suscripciones_bp.route('/')
 @login_required
-def listar_planes():
-    cursor = current_app.db.connection.cursor()
-    cursor.execute("""
-        SELECT id_tipo_suscripcion, nombre, descripcion, precio_mensual
-        FROM tipo_suscripcion
-    """)
+def suscripcion():
+    db = current_app.db
+    cursor = db.connection.cursor()
+
+    # Obtener planes disponibles
+    cursor.execute("SELECT * FROM tipo_suscripcion ORDER BY precio_mensual ASC")
     planes = cursor.fetchall()
+
+    # Obtener suscripción activa del usuario
+    suscripcion_actual = ModelSuscripcion.obtener_suscripcion_activa(db, current_user.id_usuario)
+
+    # Obtener historial de suscripciones (con fechas formateadas)
+    cursor.execute("""
+        SELECT s.id_suscripcion, s.id_usuario, 
+               DATE_FORMAT(s.fecha_inicio, '%%d/%%m/%%Y') as fecha_inicio,
+               DATE_FORMAT(s.fecha_fin, '%%d/%%m/%%Y') as fecha_fin,
+               s.estado, ts.nombre AS tipo_nombre
+        FROM suscripciones s
+        INNER JOIN tipo_suscripcion ts ON s.id_tipo_suscripcion = ts.id_tipo_suscripcion
+        WHERE s.id_usuario = %s
+        ORDER BY s.fecha_inicio DESC
+    """, (current_user.id_usuario,))
+    historial = cursor.fetchall()
+
     cursor.close()
-    return render_template('suscripciones/suscripciones.html', planes=planes)
+
+    # Determinar qué tutoriales mostrar según suscripción
+    tutoriales_premium = []
+    if suscripcion_actual:
+        tipo_sub = suscripcion_actual.get('tipo_nombre', '').lower()
+        
+        if 'básica' in tipo_sub or 'basica' in tipo_sub:
+            # Mostrar solo 2 tutoriales para suscripción básica
+            tutoriales_premium = ModelSuscripcion.obtener_videotutoriales_premium(db, limite=2)
+        elif 'premium' in tipo_sub:
+            # Mostrar todos los tutoriales para suscripción premium
+            tutoriales_premium = ModelSuscripcion.obtener_videotutoriales_premium(db, limite=None)
+
+    return render_template(
+        'suscripciones/suscripcion.html',
+        planes=planes,
+        suscripcion_actual=suscripcion_actual,
+        historial=historial,
+        tutoriales_premium=tutoriales_premium
+    )
 
 
-# 🟡 Subir comprobante y crear la suscripción
-@suscripciones_bp.route('/pago/<int:id_tipo>', methods=['GET', 'POST'])
+# ===============================
+# SUBIR COMPROBANTE
+# ===============================
+@suscripciones_bp.route('/subir/<int:id_tipo>', methods=['GET', 'POST'])
 @login_required
 def subir_comprobante(id_tipo):
-    if request.method == 'POST':
-        file = request.files.get('comprobante')
-        if not file or file.filename.strip() == '':
-            flash('⚠️ Debes subir un comprobante de pago.', 'danger')
-            return redirect(request.url)
+    db = current_app.db
+    cursor = db.connection.cursor()
 
-        # Crear carpeta si no existe
-        upload_folder = os.path.join('src', 'static', 'comprobantes')
-        os.makedirs(upload_folder, exist_ok=True)
-
-        # Guardar el archivo
-        filename = f"user_{current_user.id_usuario}_{file.filename}"
-        filepath = os.path.join(upload_folder, filename)
-        file.save(filepath)
-
-        # Crear la entidad de suscripción
-        suscripcion = Suscripcion(
-            id_usuario=current_user.id_usuario,
-            id_tipo_suscripcion=id_tipo,
-            fecha_inicio=date.today(),
-            fecha_fin=date.today() + timedelta(days=30),
-            comprobante=filename,
-            estado='pendiente'
-        )
-
-        # Guardar en la base de datos
-        resultado = ModelSuscripcion.insert(current_app.db, suscripcion)
-
-        if resultado:
-            flash('📤 Comprobante enviado correctamente. Espera la validación del administrador.', 'success')
-        else:
-            flash('❌ Error al guardar la suscripción. Inténtalo de nuevo.', 'danger')
-
-        return redirect(url_for('suscripciones_bp.ver_suscripcion'))
-
-    # Si es método GET, mostrar el formulario
-    cursor = current_app.db.connection.cursor()
     cursor.execute("SELECT * FROM tipo_suscripcion WHERE id_tipo_suscripcion = %s", (id_tipo,))
     plan = cursor.fetchone()
     cursor.close()
 
     if not plan:
-        flash('El plan seleccionado no existe.', 'danger')
-        return redirect(url_for('suscripciones_bp.listar_planes'))
+        flash("Plan no encontrado", "danger")
+        return redirect(url_for('suscripciones_bp.suscripcion'))
+
+    if request.method == 'POST':
+        archivo = request.files.get('comprobante')
+        if not archivo or archivo.filename == '':
+            flash("Debes subir un comprobante.", "danger")
+            return redirect(request.url)
+
+        filename = secure_filename(archivo.filename)
+        # Agregar timestamp para evitar nombres duplicados
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{filename}"
+        
+        path = os.path.join("src/static/comprobantes", filename)
+        
+        # Crear directorio si no existe
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        
+        archivo.save(path)
+
+        if ModelSuscripcion.crear_suscripcion(db, current_user.id_usuario, id_tipo, filename):
+            flash("✅ Comprobante subido correctamente. Tu solicitud está pendiente de aprobación.", "success")
+            return redirect(url_for('suscripciones_bp.suscripcion'))
+        else:
+            flash("❌ Error al procesar la suscripción. Intenta de nuevo.", "danger")
 
     return render_template('suscripciones/subir_comprobante.html', plan=plan)
 
 
-# 🔵 Ver la suscripción del usuario
-@suscripciones_bp.route('/mi-suscripcion')
+# ===============================
+# MI SUSCRIPCIÓN
+# ===============================
+@suscripciones_bp.route('/mi')
 @login_required
-def ver_suscripcion():
-    # Validar y actualizar suscripciones vencidas
-    ModelSuscripcion.validar_vencidas(current_app.db)
+def mi_suscripcion():
+    db = current_app.db
 
-    # Obtener la última suscripción del usuario
-    suscripcion = ModelSuscripcion.get_last_by_user(current_app.db, current_user.id_usuario)
+    suscripcion = ModelSuscripcion.obtener_suscripcion_activa(db, current_user.id_usuario)
+
     if not suscripcion:
-        flash('Aún no tienes una suscripción activa.', 'info')
-        return redirect(url_for('suscripciones_bp.listar_planes'))
+        flash("No tienes suscripción activa.", "info")
+        return redirect(url_for('suscripciones_bp.suscripcion'))
 
-    # Determinar estado visual
-    estado_mostrar = "Desconocido"
-    if suscripcion.estado == "aprobada" and suscripcion.fecha_inicio <= date.today() <= suscripcion.fecha_fin:
-        estado_mostrar = "Activa"
-    elif suscripcion.estado == "aprobada" and date.today() > suscripcion.fecha_fin:
-        estado_mostrar = "Expirada"
-    elif suscripcion.estado:
-        estado_mostrar = suscripcion.estado.capitalize()
+    # Obtener beneficios según el tipo de suscripción
+    descuento = ModelSuscripcion.obtener_descuento(db, current_user.id_usuario)
+    limite_tutoriales = ModelSuscripcion.obtener_limite_tutoriales(db, current_user.id_usuario)
+    
+    beneficios = {
+        'descuento_porcentaje': int(descuento * 100),
+        'limite_tutoriales': 'Ilimitado' if limite_tutoriales == 0 else limite_tutoriales,
+        'acceso_premium': suscripcion['es_premium']
+    }
 
-    # Obtener detalles del plan
-    cursor = current_app.db.connection.cursor()
-    cursor.execute("SELECT nombre, precio_mensual FROM tipo_suscripcion WHERE id_tipo_suscripcion = %s",
-                   (suscripcion.id_tipo_suscripcion,))
-    plan = cursor.fetchone()
-    cursor.close()
-
-    return render_template('suscripciones/mi_suscripcion.html',
-                           suscripcion=suscripcion,
-                           plan=plan,
-                           estado=estado_mostrar)
+    return render_template(
+        'suscripciones/mi_suscripcion.html',
+        suscripcion=suscripcion,
+        beneficios=beneficios
+    )

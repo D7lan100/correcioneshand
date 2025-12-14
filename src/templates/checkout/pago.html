@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container my-5">
+    <div class="row">
+        <!-- Columna Izquierda: Formulario -->
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-credit-card"></i> Finalizar Compra</h4>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('checkout_bp.procesar_pago') }}" method="POST" id="paymentForm">
+
+                        <!-- CAMPO OCULTO QUE ENVIARÁ EL JSON -->
+                        <input type="hidden" id="detalles_pago" name="detalles_pago">
+
+                        <h5 class="mb-3">Datos de Envío</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Ciudad</label>
+                                <select id="envio_ciudad" name="ciudad" class="form-select" required>
+                                    <option value="Bogotá">Bogotá</option>
+                                    <option value="Medellín">Medellín</option>
+                                    <option value="Cali">Cali</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono de Contacto</label>
+                                <input type="tel" id="envio_telefono" name="telefono"
+                                    class="form-control" required placeholder="3001234567">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Dirección de Entrega</label>
+                            <input type="text" id="envio_direccion" name="direccion"
+                                class="form-control" required placeholder="Calle 123 # 45-67, Barrio...">
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="mb-3">Método de Pago</h5>
+
+                        <div class="btn-group w-100 mb-3" role="group">
+                            <input type="radio" class="btn-check" name="metodo_pago" id="pay_card" value="Tarjeta Crédito/Débito" autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="pay_card"><i class="bi bi-credit-card"></i> Tarjeta</label>
+
+                            <input type="radio" class="btn-check" name="metodo_pago" id="pay_pse" value="PSE" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="pay_pse"><i class="bi bi-bank"></i> PSE</label>
+
+                            <input type="radio" class="btn-check" name="metodo_pago" id="pay_paypal" value="PayPal" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="pay_paypal"><i class="bi bi-paypal"></i> PayPal</label>
+                        </div>
+
+                        <!-- FORMULARIO TARJETA -->
+                        <div id="card-details" class="bg-light p-3 rounded mb-3 payment-box">
+                            <label class="small text-muted">Titular de la Tarjeta</label>
+                            <input type="text" id="tarjeta_titular" class="form-control mb-2" placeholder="Nombre completo">
+
+                            <label class="small text-muted">Número de Tarjeta</label>
+                            <input type="text" id="tarjeta_numero" class="form-control mb-2" placeholder="0000 0000 0000 0000">
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="text" id="tarjeta_exp" class="form-control" placeholder="MM/AA">
+                                </div>
+                                <div class="col-6">
+                                    <input type="text" id="tarjeta_cvc" class="form-control" placeholder="CVC">
+                                </div>
+                            </div>
+
+                            <label class="small mt-2">Código Postal</label>
+                            <input type="text" id="tarjeta_postal" class="form-control" placeholder="110111">
+                        </div>
+
+                        <!-- FORMULARIO PSE -->
+                        <div id="pse-details" class="bg-light p-3 rounded mb-3 payment-box d-none">
+
+                            <label class="form-label">Banco</label>
+                            <select id="pse_banco" class="form-select mb-2">
+                                <option value="">Seleccione un banco</option>
+                                <option value="Bancolombia">Bancolombia</option>
+                                <option value="Davivienda">Davivienda</option>
+                                <option value="Banco de Bogotá">Banco de Bogotá</option>
+                            </select>
+
+                            <label class="form-label">Tipo de Documento</label>
+                            <select id="pse_tipo_doc" class="form-select mb-2">
+                                <option value="CC">Cédula</option>
+                                <option value="CE">Cédula Extranjería</option>
+                                <option value="NIT">NIT</option>
+                            </select>
+
+                            <label class="form-label">Número de Identificación</label>
+                            <input type="text" id="pse_identificacion" class="form-control mb-2">
+
+                            <label class="form-label">Correo Electrónico</label>
+                            <input type="email" id="pse_email" class="form-control mb-2">
+
+                            <label class="form-label">Código Postal</label>
+                            <input type="text" id="pse_postal" class="form-control" placeholder="110111">
+                        </div>
+
+                        <!-- FORMULARIO PAYPAL -->
+                        <div id="paypal-details" class="bg-light p-3 rounded mb-3 payment-box d-none">
+                            <label class="form-label">Correo PayPal</label>
+                            <input type="email" id="paypal_email" class="form-control mb-2">
+
+                            <label class="form-label">Código Postal</label>
+                            <input type="text" id="paypal_postal" class="form-control" placeholder="110111">
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 btn-lg mt-3">
+                            Pagar ${{ "%.2f"|format(total) }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen -->
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Resumen del Pedido</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for item in items %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <img src="{{ url_for('static', filename='img/' + (item.imagen_producto if item.imagen_producto else 'default.png')) }}" 
+                                     width="50" height="50" class="rounded me-3 object-fit-cover">
+                                <div>
+                                    <h6 class="my-0">{{ item.nombre }}</h6>
+                                    <small class="text-muted">Cant: {{ item.cantidad }}</small>
+                                </div>
+                            </div>
+                            <span class="text-muted">${{ "%.2f"|format(item.precio_total) }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <strong>Total a Pagar:</strong>
+                        <strong class="text-success">${{ "%.2f"|format(total) }}</strong>
+                    </div>
+                    <div class="alert alert-warning mt-2 p-2 small">
+                        <i class="bi bi-info-circle"></i> Los productos pendientes de cotización permanecerán en tu carrito.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCRIPT PARA VISUALIZAR FORMULARIOS Y ENVIAR JSON -->
+<script>
+    const cardBox = document.getElementById("card-details");
+    const pseBox = document.getElementById("pse-details");
+    const paypalBox = document.getElementById("paypal-details");
+
+    document.querySelectorAll("input[name='metodo_pago']").forEach(radio => {
+        radio.addEventListener("change", function () {
+
+            cardBox.classList.add("d-none");
+            pseBox.classList.add("d-none");
+            paypalBox.classList.add("d-none");
+
+            if (this.value === "Tarjeta Crédito/Débito") { cardBox.classList.remove("d-none"); }
+            if (this.value === "PSE") { pseBox.classList.remove("d-none"); }
+            if (this.value === "PayPal") { paypalBox.classList.remove("d-none"); }
+        });
+    });
+
+    // CAPTURAR Y ENVIAR JSON COMPLETO
+    document.getElementById("paymentForm").addEventListener("submit", function(e) {
+
+        const metodo = document.querySelector("input[name='metodo_pago']:checked").value;
+
+        let data = {
+            envio: {
+                ciudad: document.getElementById("envio_ciudad").value,
+                telefono: document.getElementById("envio_telefono").value,
+                direccion: document.getElementById("envio_direccion").value
+            },
+            metodo: metodo,
+            datos: {}
+        };
+
+        if (metodo === "Tarjeta Crédito/Débito") {
+            data.datos = {
+                titular: document.getElementById("tarjeta_titular").value,
+                numero: document.getElementById("tarjeta_numero").value,
+                exp: document.getElementById("tarjeta_exp").value,
+                cvc: document.getElementById("tarjeta_cvc").value,
+                postal: document.getElementById("tarjeta_postal").value
+            };
+        }
+
+        if (metodo === "PSE") {
+            data.datos = {
+                banco: document.getElementById("pse_banco").value,
+                tipo_doc: document.getElementById("pse_tipo_doc").value,
+                identificacion: document.getElementById("pse_identificacion").value,
+                email: document.getElementById("pse_email").value,
+                postal: document.getElementById("pse_postal").value
+            };
+        }
+
+        if (metodo === "PayPal") {
+            data.datos = {
+                email: document.getElementById("paypal_email").value,
+                postal: document.getElementById("paypal_postal").value
+            };
+        }
+
+        document.getElementById("detalles_pago").value = JSON.stringify(data);
+    });
+</script>
+
+{% endblock %}

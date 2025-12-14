@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Mis Pedidos - Hand&Genius{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+  <h2 class="mb-4">Mis Pedidos</h2>
+
+  {% if pedidos|length == 0 %}
+    <div class="alert alert-info">No tienes pedidos aún.</div>
+  {% endif %}
+
+  <div class="row g-3">
+    {% for p in pedidos %}
+    {% set numero_visible = loop.index %}
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h5 class="mb-1">Pedido #{{ loop.index }}</h5>
+                <small class="text-muted d-block">
+                    Fecha del pedido: {{ p.fecha.strftime('%Y-%m-%d %H:%M') }}
+                </small>
+
+                {% if p.fecha_estimada %}
+                <small class="text-muted d-block">
+                    Entrega estimada: {{ p.fecha_estimada }}
+                </small>
+                {% endif %}
+                <div class="mt-2">
+                  <span class="badge 
+                    {% if p.estado == 'pagado' %} bg-success
+                    {% elif p.estado == 'pendiente' %} bg-warning text-dark
+                    {% elif p.estado == 'cancelado' %} bg-danger
+                    {% else %} bg-secondary {% endif %}">
+                    {{ p.estado }}
+                  </span>
+                  <span class="ms-2 text-muted">Método: {{ p.metodo_pago }}</span>
+                </div>
+              </div>
+
+              <div class="text-end">
+                <h5 class="text-success mb-0">${{ '%.2f'|format(p.total_pagado) }}</h5>
+                <small class="text-muted d-block">Envío: {{ p.ciudad_envio }} - {{ p.direccion_envio }}</small>
+              </div>
+            </div>
+
+            <hr>
+
+            <div class="row">
+              <div class="col-md-6">
+                <h6>Datos de envío</h6>
+                <p class="mb-0"><strong>Dirección:</strong> {{ p.direccion_envio or '-' }}</p>
+                <p class="mb-0"><strong>Ciudad:</strong> {{ p.ciudad_envio or '-' }}</p>
+                <p class="mb-0"><strong>Teléfono:</strong> {{ p.telefono_contacto or '-' }}</p>
+              </div>
+
+              <div class="col-md-6">
+                <h6>Detalles de pago</h6>
+
+                {% if p.tarjeta %}
+                  <div class="mb-2">
+                    <strong>Tarjeta</strong>
+                    <p class="mb-0"><small>Titular: {{ p.tarjeta.titular or '-' }}</small></p>
+                    <p class="mb-0"><small>Número: {{ p.tarjeta.numero_mask or '-' }}</small></p>
+                    <p class="mb-0"><small>Exp: {{ p.tarjeta.exp or '-' }}</small></p>
+                  </div>
+                {% endif %}
+
+                {% if p.pse %}
+                  <div class="mb-2">
+                    <strong>PSE</strong>
+                    <p class="mb-0"><small>Banco: {{ p.pse.banco or '-' }}</small></p>
+                    <p class="mb-0"><small>Documento: {{ p.pse.tipo_doc or '-' }} - {{ p.pse.identificacion or '-' }}</small></p>
+                    <p class="mb-0"><small>Email: {{ p.pse.email or '-' }}</small></p>
+                    <p class="mb-0"><small>Postal: {{ p.pse.postal or '-' }}</small></p>
+                  </div>
+                {% endif %}
+
+                {% if p.paypal %}
+                  <div class="mb-2">
+                    <strong>PayPal</strong>
+                    <p class="mb-0"><small>Email: {{ p.paypal.email or '-' }}</small></p>
+                    <p class="mb-0"><small>País: {{ p.paypal.pais or '-' }}</small></p>
+                  </div>
+                {% endif %}
+
+                {% if not (p.tarjeta or p.pse or p.paypal) %}
+                  <pre class="small bg-light p-2 rounded">{{ p.detalles_raw | tojson(indent=2) }}</pre>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="mt-3 d-flex justify-content-end gap-2">
+              <a href="{{ url_for('pedidos_bp.detalle', id_pedido=p.id_pedido) }}" 
+                class="btn btn-outline-primary btn-sm">
+                Ver Detalle
+              </a>
+
+              <a class="btn btn-outline-secondary btn-sm" href="#">
+                Imprimir
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

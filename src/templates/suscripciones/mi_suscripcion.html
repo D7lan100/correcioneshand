@@ -1,40 +1,41 @@
 {% extends 'base.html' %}
-{% block title %}Mi suscripción{% endblock %}
+{% block title %}Mi Suscripción{% endblock %}
+
 {% block content %}
 
-<div class="container mt-5">
-  <h2 class="text-center mb-4">📄 Mi Suscripción</h2>
+<div class="container py-5">
 
-  <div class="card shadow p-4">
-    <h4>{{ plan[0] }}</h4>
-    <p><strong>Precio mensual:</strong> ${{ plan[1] }}</p>
-    <hr>
+    <div class="col-md-6 mx-auto">
+        <div class="card shadow-lg border-0">
+            <div class="card-body">
 
-    <p><strong>Fecha de inicio:</strong> {{ suscripcion.fecha_inicio }}</p>
-    <p><strong>Fecha de fin:</strong> {{ suscripcion.fecha_fin }}</p>
+                <h2 class="fw-bold text-center mb-4">📄 Mi Suscripción</h2>
 
-    <p><strong>Estado:</strong>
-      {% if estado == 'Activa' %}
-        <span class="badge bg-success">Activa</span>
-      {% elif estado == 'Pendiente' %}
-        <span class="badge bg-warning text-dark">Pendiente</span>
-      {% elif estado == 'Expirada' %}
-        <span class="badge bg-secondary">Expirada</span>
-      {% else %}
-        <span class="badge bg-info">{{ estado }}</span>
-      {% endif %}
-    </p>
+                <p><strong>Plan:</strong> {{ suscripcion.tipo_nombre }}</p>
+                <p><strong>Inicio:</strong> {{ suscripcion.fecha_inicio }}</p>
+                <p><strong>Fin:</strong> {{ suscripcion.fecha_fin }}</p>
 
-    {% if suscripcion.comprobante %}
-    <p><strong>Comprobante:</strong>
-      <a href="{{ url_for('static', filename='comprobantes/' + suscripcion.comprobante) }}" target="_blank">
-        Ver comprobante
-      </a>
-    </p>
-    {% endif %}
+                <p><strong>Estado:</strong>
+                    <span class="badge bg-primary">{{ suscripcion.estado }}</span>
+                </p>
 
-    <a href="{{ url_for('suscripciones_bp.listar_planes') }}" class="btn btn-outline-primary mt-3">🔙 Volver a planes</a>
-  </div>
+                {% if suscripcion.comprobante %}
+                <p><strong>Comprobante:</strong>
+                    <a href="{{ url_for('static', filename='comprobantes/' + suscripcion.comprobante) }}" target="_blank">
+                        Ver comprobante
+                    </a>
+                </p>
+                {% endif %}
+
+                <a href="{{ url_for('suscripciones_bp.suscripcion') }}"
+                   class="btn btn-outline-primary w-100 mt-3">
+                    🔙 Volver
+                </a>
+
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {% endblock %}

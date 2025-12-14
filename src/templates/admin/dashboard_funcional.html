@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Admin{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <h2 class="mb-4">Panel de Control</h2>
+
+    <!-- MÉTRICAS -->
+    <div class="row">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center p-3">
+                <h5>Total Ingresos</h5>
+                <h2 class="text-success">${{ estadisticas.total_ingresos }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center p-3">
+                <h5>Total Pedidos</h5>
+                <h2 class="text-primary">{{ estadisticas.total_pedidos }}</h2>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center p-3">
+                <h5>Total Usuarios</h5>
+                <h2 class="text-warning">{{ estadisticas.total_usuarios }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRÁFICO -->
+    <div class="card mt-4 shadow-sm p-4">
+        <h5 class="text-center">Ingresos por Mes</h5>
+
+        <canvas id="chartIngresos"></canvas>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const ctx = document.getElementById('chartIngresos');
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [
+            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ],
+        datasets: [{
+            label: 'Ingresos',
+            data: {{ estadisticas.ingresos_mes|tojson }},
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+
+{% endblock %}

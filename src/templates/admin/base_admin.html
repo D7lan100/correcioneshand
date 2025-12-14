@@ -84,11 +84,7 @@
           <i class="fa-solid fa-box"></i> Productos
         </a>
 
-        <a href="{{ url_for('admin_bp.pedidos') }}" class="{% if request.endpoint == 'admin_bp.pedidos' %}active{% endif %}">
-          <i class="fa-solid fa-truck-fast"></i> Pedidos
-        </a>
-
-        <a href="{{ url_for('admin_bp.suscripciones') }}" class="{% if request.endpoint == 'admin_bp.suscripciones' %}active{% endif %}">
+        <a href="{{ url_for('admin_bp.admin_suscripciones') }}" class="{% if request.endpoint == 'admin_bp.admin_suscripciones' %}active{% endif %}">
           <i class="fa-solid fa-crown"></i> Suscripciones
         </a>
 
@@ -100,6 +96,10 @@
           <i class="fa-solid fa-comments"></i> Chat en Vivo
         </a>
 
+        <!-- PQRS (VERSIÓN CORRECTA Y ESTABLE) -->
+        <a href="{{ url_for('admin_bp.pqrs') }}" class="{% if request.endpoint == 'admin_bp.pqrs' %}active{% endif %}">
+          <i class="fa-solid fa-file-signature"></i> PQRS
+        </a>
 
         <hr>
 

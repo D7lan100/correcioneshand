@@ -1,11 +1,12 @@
-# Archivos de Python
+env/
+.env
 __pycache__/
 *.pyc
-
-# Entornos virtuales
-env/
-venv/
-
-# Archivos de sistema
-.DS_Store
-Thumbs.db
+*.pyo
+*.pyd
+.vscode/
+database/
+*.db
+*.sqlite
+*.sqlite3
+flask_session/

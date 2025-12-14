@@ -2,21 +2,23 @@
 from flask import Blueprint, render_template, current_app, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from src.models.ModelProducto import ModelProducto
+from src.models.ModelSuscripcion import ModelSuscripcion, suscripcion_requerida, premium_requerido
 
 videotutoriales_bp = Blueprint('videotutoriales_bp', __name__, url_prefix="/videotutoriales")
 
 # ==========================================================
-# 📺 LISTA DE VIDEOTUTORIALES
+# 📺 LISTA DE VIDEOTUTORIALES (PÁGINA PRINCIPAL)
 # ==========================================================
 @videotutoriales_bp.route('/')
 def lista_videos():
     """Lista todos los videotutoriales (id_categoria = 4)"""
     db = current_app.db
     try:
-        videotutoriales = ModelProducto.get_by_categoria(db, 4)  # Usa el modelo
+        videotutoriales = ModelProducto.get_by_categoria(db, 4)
         return render_template('videotutoriales/videotutoriales.html', videotutoriales=videotutoriales)
     except Exception as e:
         return render_template('videotutoriales/videotutoriales.html', error=f"Error al cargar los videotutoriales: {e}")
+
 
 # ==========================================================
 # 🎥 DETALLE DE UN VIDEOTUTORIAL
@@ -59,7 +61,6 @@ def detalle_video(id_video):
         if not row:
             return render_template("videotutoriales/videotutorial_detalle.html", error="Videotutorial no encontrado")
 
-        # Mapeo al formato que espera tu plantilla actual (usa 'video')
         video = {
             'id_producto': row[0],
             'nombre': row[1],
@@ -90,10 +91,12 @@ def detalle_video(id_video):
         )
 
 
+# ==========================================================
+# ⭐ CALIFICAR UN VIDEO
+# ==========================================================
 @videotutoriales_bp.route('/calificar/<int:id_video>', methods=['POST'])
 @login_required
 def calificar_video(id_video):
-    """Permite que un usuario califique un videotutorial"""
     puntuacion = request.form.get('puntuacion')
     comentario = request.form.get('comentario')
 
@@ -105,7 +108,6 @@ def calificar_video(id_video):
     cur = db.connection.cursor()
 
     try:
-        # Verificar si el usuario ya calificó este video
         cur.execute("""
             SELECT id_calificacion FROM calificaciones
             WHERE id_usuario = %s AND id_producto = %s
@@ -113,22 +115,19 @@ def calificar_video(id_video):
         existe = cur.fetchone()
 
         if existe:
-            # Si ya calificó, actualiza su calificación
             cur.execute("""
                 UPDATE calificaciones
                 SET puntuacion = %s, comentario = %s, fecha_calificacion = NOW()
                 WHERE id_calificacion = %s
             """, (puntuacion, comentario, existe[0]))
-            mensaje = "Tu calificación ha sido actualizada correctamente. ⭐"
+            mensaje = "Tu calificación ha sido actualizada correctamente."
         else:
-            # Si no existe, inserta una nueva
             cur.execute("""
                 INSERT INTO calificaciones (id_usuario, id_producto, puntuacion, comentario)
                 VALUES (%s, %s, %s, %s)
             """, (current_user.id_usuario, id_video, puntuacion, comentario))
-            mensaje = "¡Gracias por calificar este videotutorial! 💫"
+            mensaje = "Gracias por calificar este videotutorial."
 
-        # ✅ Recalcular el promedio inmediatamente después
         cur.execute("""
             UPDATE productos
             SET calificacion_promedio = (
@@ -144,10 +143,190 @@ def calificar_video(id_video):
 
     except Exception as e:
         db.connection.rollback()
-        flash(f"❌ Error al guardar la calificación: {e}", "danger")
+        flash(f"Error al guardar la calificación: {e}", "danger")
 
     finally:
         cur.close()
 
     return redirect(url_for('videotutoriales_bp.detalle_video', id_video=id_video))
 
+
+# ==========================================================
+# 🔐 VER VIDEO SEGÚN SUSCRIPCIÓN
+# ==========================================================
+@videotutoriales_bp.route('/ver/<int:id_video>')
+@login_required
+def ver_video(id_video):
+    db = current_app.db
+    cursor = db.connection.cursor()
+    
+    cursor.execute("""
+        SELECT p.*, u.nombre_completo as autor,
+               COALESCE(AVG(c.puntuacion), 0) as promedio_calificacion,
+               COUNT(c.id_calificacion) as total_calificaciones
+        FROM productos p
+        LEFT JOIN usuarios u ON p.id_vendedor = u.id_usuario
+        LEFT JOIN calificaciones c ON p.id_producto = c.id_producto
+        WHERE p.id_producto = %s AND p.id_categoria = 4
+        GROUP BY p.id_producto
+    """, (id_video,))
+    
+    video = cursor.fetchone()
+    cursor.close()
+    
+    if not video:
+        flash('Video no encontrado', 'danger')
+        return redirect(url_for('videotutoriales_bp.lista_videos'))
+    
+    tipo_video = video[11]
+
+    puede_ver, razon = ModelSuscripcion.puede_ver_tutorial(
+        db, current_user.id_usuario, tipo_video
+    )
+    
+    if not puede_ver:
+        flash(razon, 'warning')
+        return render_template(
+            'videotutoriales/acceso_restringido.html',
+            video=video,
+            razon=razon,
+            tipo_video=tipo_video
+        )
+    
+    suscripcion = ModelSuscripcion.obtener_suscripcion_activa(
+        db, current_user.id_usuario
+    )
+    
+    return render_template(
+        'videotutoriales/ver_video.html',
+        video=video,
+        suscripcion=suscripcion,
+        user=current_user
+    )
+
+
+# ==========================================================
+# 📋 LISTA CON INDICADORES DE ACCESO
+# (ANTES era lista_videos DUPLICADA)
+# ==========================================================
+@videotutoriales_bp.route('/lista')
+def lista_videos_indicadores():
+    """Lista todos los videotutoriales con indicadores de acceso"""
+    db = current_app.db
+    cursor = db.connection.cursor()
+    
+    cursor.execute("""
+        SELECT p.*, u.nombre_completo as autor,
+               COALESCE(AVG(c.puntuacion), 0) as promedio_calificacion
+        FROM productos p
+        LEFT JOIN usuarios u ON p.id_vendedor = u.id_usuario
+        LEFT JOIN calificaciones c ON p.id_producto = c.id_producto
+        WHERE p.id_categoria = 4
+        GROUP BY p.id_producto
+        ORDER BY p.id_producto DESC
+    """)
+    
+    videos = cursor.fetchall()
+    cursor.close()
+    
+    videos_con_acceso = []
+    for video in videos:
+        tipo_video = video[11]
+
+        info = {
+            'datos': video,
+            'puede_ver': False,
+            'requiere_suscripcion': tipo_video in ['privado', 'premium'],
+            'requiere_premium': tipo_video == 'premium',
+            'es_publico': tipo_video == 'publico'
+        }
+
+        if tipo_video == 'publico':
+            info['puede_ver'] = True
+        elif current_user.is_authenticated:
+            puede_ver, _ = ModelSuscripcion.puede_ver_tutorial(
+                db, current_user.id_usuario, tipo_video
+            )
+            info['puede_ver'] = puede_ver
+
+        videos_con_acceso.append(info)
+    
+    suscripcion = None
+    if current_user.is_authenticated:
+        suscripcion = ModelSuscripcion.obtener_suscripcion_activa(
+            db, current_user.id_usuario
+        )
+    
+    return render_template(
+        'videotutoriales/lista.html',
+        videos=videos_con_acceso,
+        suscripcion=suscripcion
+    )
+
+
+# ==========================================================
+# 🎯 VIDEOS PREMIUM
+# ==========================================================
+@videotutoriales_bp.route('/premium')
+@login_required
+@premium_requerido
+def videos_premium():
+    db = current_app.db
+    cursor = db.connection.cursor()
+    
+    cursor.execute("""
+        SELECT p.*, u.nombre_completo as autor,
+               COALESCE(AVG(c.puntuacion), 0) as promedio_calificacion
+        FROM productos p
+        LEFT JOIN usuarios u ON p.id_vendedor = u.id_usuario
+        LEFT JOIN calificaciones c ON p.id_producto = c.id_producto
+        WHERE p.id_categoria = 4 AND p.tipo_video = 'premium'
+        GROUP BY p.id_producto
+        ORDER BY p.id_producto DESC
+    """)
+    
+    videos = cursor.fetchall()
+    cursor.close()
+    
+    suscripcion = ModelSuscripcion.obtener_suscripcion_activa(
+        db, current_user.id_usuario
+    )
+    
+    return render_template(
+        'videotutoriales/premium.html',
+        videos=videos,
+        suscripcion=suscripcion
+    )
+
+
+# ==========================================================
+# 📊 PROGRESO DEL USUARIO
+# ==========================================================
+@videotutoriales_bp.route('/mi-progreso')
+@login_required
+@suscripcion_requerida
+def mi_progreso():
+    db = current_app.db
+    
+    suscripcion = ModelSuscripcion.obtener_suscripcion_activa(
+        db, current_user.id_usuario
+    )
+    
+    limite = ModelSuscripcion.obtener_limite_tutoriales(
+        db, current_user.id_usuario
+    )
+    vistos = ModelSuscripcion.tutoriales_vistos_este_mes(
+        db, current_user.id_usuario
+    )
+    
+    estadisticas = {
+        'limite': limite if limite else 'Ilimitado',
+        'vistos': vistos,
+        'restantes': (limite - vistos) if limite else 'Ilimitado'
+    }
+    
+    return render_template(
+        'videotutoriales/mi_progreso.html',
+        suscripcion=suscripcion,
+        estadisticas=estadisticas
+    )

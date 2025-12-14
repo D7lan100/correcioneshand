@@ -1,4 +1,3 @@
-videotutorial_detalle
 {% extends "base.html" %}
 {% block title %}{{ video.nombre }} - Videotutorial{% endblock %}
 
@@ -145,7 +144,7 @@ videotutorial_detalle
               class="btn btn-sm toggle-fav-btn {{ 'btn-outline-secondary' if video.id_producto in favoritos_usuario else 'btn-outline-danger' }}" 
               data-id="{{ video.id_producto }}" 
               data-favorito="{{ '1' if video.id_producto in favoritos_usuario else '0' }}">
-            {{ '💔 Quitar de Favoritos' if video.id_producto in favoritos_usuario else '❤ Agregar a Favoritos' }}
+            {{ '💔 Quitar de Favoritos' if video.id_producto in favoritos_usuario else '❤️ Agregar a Favoritos' }}
           </button>
         {% else %}
           <p><a href="{{ url_for('auth_bp.login') }}">Inicia sesión</a> para guardar favoritos</p>
@@ -163,15 +162,15 @@ document.addEventListener('click', async function(e) {
     const esFavorito = btn.dataset.favorito === "1";
 
     const url = esFavorito 
-      ? /favoritos/eliminar/${id} 
-      : /favoritos/agregar/${id};
+      ? `/favoritos/eliminar/${id}` 
+      : `/favoritos/agregar/${id}`;
 
     try {
       const resp = await fetch(url, { method: "POST" });
       if (resp.ok) {
         // Cambiar el estado visual del botón
         if (esFavorito) {
-          btn.textContent = "❤ Agregar a Favoritos";
+          btn.textContent = "❤️ Agregar a Favoritos";
           btn.classList.remove("btn-outline-secondary");
           btn.classList.add("btn-outline-danger");
           btn.dataset.favorito = "0";

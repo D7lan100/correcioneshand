@@ -4,355 +4,452 @@
 
 {% block customCSS %}
 <style>
-  body { 
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    min-height: 100vh; 
-  }
+    body {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+    }
 
-  /* PRODUCTOS */
-  .product-card { 
-    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
-    padding: 25px 20px;
-    text-align: center;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.05);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid rgba(255,255,255,0.8);
-    position: relative;
-    overflow: hidden;
-    height: 100%;
-  }
-  .product-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0,128,255,0.1), transparent);
-    transition: left 0.6s ease;
-  }
-  .product-card:hover::before { left: 100%; }
-  .product-card:hover { 
-    transform: translateY(-10px) scale(1.02); 
-    box-shadow: 0 20px 40px rgba(0,128,255,0.15), 0 10px 25px rgba(0,0,0,0.1); 
-    border-color: rgba(0,128,255,0.3); 
-  }
-  .product-image-container { 
-    position: relative; 
-    margin-bottom: 15px; 
-    border-radius: 15px; 
-    overflow: hidden; 
-    background: linear-gradient(45deg, #f1f3f4, #e8eaed); 
-    height: 140px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-  }
-  .product-image { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: cover; 
-    transition: transform 0.3s ease; 
-  }
-  .product-card:hover .product-image { transform: scale(1.05); }
-  .no-image-placeholder { 
-    color: #6c757d; 
-    font-size: 48px; 
-    opacity: 0.5; 
-  }
-  .product-category { 
-    background: linear-gradient(135deg, #0080FF, #3399FF); 
-    color: white !important; 
-    padding: 6px 16px; 
-    border-radius: 20px; 
-    font-size: 12px; 
-    font-weight: 600; 
-    text-transform: uppercase; 
-    letter-spacing: 0.5px; 
-    margin-bottom: 12px; 
-    display: inline-block; 
-    box-shadow: 0 3px 10px rgba(0,128,255,0.3); 
-  }
-  .product-name { 
-    color: #2d3748 !important; 
-    font-weight: 700; 
-    font-size: 18px; 
-    margin-bottom: 8px; 
-    line-height: 1.3; 
-  }
-  .product-price { 
-    color: #0080FF !important; 
-    font-weight: 800; 
-    font-size: 22px; 
-    margin-bottom: 15px; 
-    text-shadow: 0 2px 4px rgba(0,128,255,0.1); 
-  }
-  .product-status { 
-    display: flex; 
-    justify-content: center; 
-    gap: 8px; 
-    margin-bottom: 20px; 
-    flex-wrap: wrap; 
-  }
-  .status-badge { 
-    padding: 4px 10px; 
-    border-radius: 15px; 
-    font-size: 10px; 
-    font-weight: 600; 
-    text-transform: uppercase; 
-    letter-spacing: 0.3px; 
-  }
-  .status-available { 
-    background: linear-gradient(135deg, #48bb78, #38a169); 
-    color: white; 
-    box-shadow: 0 2px 8px rgba(72,187,120,0.3); 
-  }
-  .status-unavailable { 
-    background: linear-gradient(135deg, #f56565, #e53e3e); 
-    color: white; 
-    box-shadow: 0 2px 8px rgba(245,101,101,0.3); 
-  }
-  .status-customizable { 
-    background: linear-gradient(135deg, #ed8936, #dd6b20); 
-    color: white; 
-    box-shadow: 0 2px 8px rgba(237,137,54,0.3); 
-  }
-  .btn-vermas { 
-    background: linear-gradient(135deg, #0080FF, #3399FF); 
-    color: white !important; 
-    padding: 10px 25px; 
-    border: none; 
-    border-radius: 25px; 
-    font-weight: 600; 
-    text-decoration: none; 
-    display: inline-block; 
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-    box-shadow: 0 4px 15px rgba(0,128,255,0.3); 
-    text-transform: uppercase; 
-    letter-spacing: 0.5px; 
-    font-size: 12px; 
-  }
-  .btn-vermas:hover { 
-    background: linear-gradient(135deg, #0066CC, #2685E6); 
-    transform: translateY(-2px); 
-    box-shadow: 0 8px 25px rgba(0,128,255,0.4); 
-    color: white !important; 
-  }
+    /* PRODUCTOS */
+    .product-card {
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        padding: 25px 20px;
+        text-align: center;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08), 0 2px 10px rgba(0, 0, 0, 0.05);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+    }
 
-  /* Tabs */
-  .tabs-custom { 
-    margin: 30px 0; 
-    text-align: center; 
-  }
-  .tabs-custom button { 
-    margin: 0 15px; 
-    border-radius: 25px; 
-    border: 2px solid #0080FF; 
-    background: white; 
-    padding: 12px 30px; 
-    font-weight: 500; 
-    color: #0080FF; 
-    transition: all 0.3s ease; 
-    cursor: pointer; 
-  }
-  .tabs-custom button:hover { 
-    background: #0080FF; 
-    color: white; 
-    transform: translateY(-2px); 
-    box-shadow: 0 4px 12px rgba(0,128,255,0.3); 
-  }
+    .product-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(0, 128, 255, 0.1), transparent);
+        transition: left 0.6s ease;
+    }
 
-  .main-title { 
-    color: #333; 
-    font-weight: 600; 
-    margin-bottom: 10px; 
-  }
-  .main-description { 
-    color: #666; 
-    font-size: 16px; 
-  }
-  .home-container { 
-    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,249,250,0.8)); 
-    padding: 30px; 
-    border-radius: 20px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-    backdrop-filter: blur(10px); 
-    margin-top: 20px; 
-  }
+    .product-card:hover::before {
+        left: 100%;
+    }
 
-  .no-products { 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-    color: white; 
-    border: none; 
-    border-radius: 15px; 
-    padding: 40px; 
-    display:none; 
-  }
+    .product-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 128, 255, 0.15), 0 10px 25px rgba(0, 0, 0, 0.1);
+        border-color: rgba(0, 128, 255, 0.3);
+    }
 
-  .filter-container .form-select,
-  .filter-container .form-control {
-    max-width: 250px;
-  }
+    .product-image-container {
+        position: relative;
+        margin-bottom: 15px;
+        border-radius: 15px;
+        overflow: hidden;
+        background: linear-gradient(45deg, #f1f3f4, #e8eaed);
+        height: 140px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .product-card:hover .product-image {
+        transform: scale(1.05);
+    }
+
+    .no-image-placeholder {
+        color: #6c757d;
+        font-size: 48px;
+        opacity: 0.5;
+    }
+
+    .product-category {
+        background: linear-gradient(135deg, #0080FF, #3399FF);
+        color: white !important;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        display: inline-block;
+        box-shadow: 0 3px 10px rgba(0, 128, 255, 0.3);
+    }
+
+    .product-name {
+        color: #2d3748 !important;
+        font-weight: 700;
+        font-size: 18px;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+
+    .product-price {
+        color: #0080FF !important;
+        font-weight: 800;
+        font-size: 22px;
+        margin-bottom: 15px;
+        text-shadow: 0 2px 4px rgba(0, 128, 255, 0.1);
+    }
+
+    .product-status {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 15px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .status-available {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        color: white;
+        box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+    }
+
+    .status-unavailable {
+        background: linear-gradient(135deg, #f56565, #e53e3e);
+        color: white;
+        box-shadow: 0 2px 8px rgba(245, 101, 101, 0.3);
+    }
+
+    .status-customizable {
+        background: linear-gradient(135deg, #ed8936, #dd6b20);
+        color: white;
+        box-shadow: 0 2px 8px rgba(237, 137, 54, 0.3);
+    }
+
+    .btn-vermas {
+        background: linear-gradient(135deg, #0080FF, #3399FF);
+        color: white !important;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 25px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 4px 15px rgba(0, 128, 255, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 12px;
+    }
+
+    .btn-vermas:hover {
+        background: linear-gradient(135deg, #0066CC, #2685E6);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 128, 255, 0.4);
+        color: white !important;
+    }
+
+    /* Tabs */
+    .tabs-custom {
+        margin: 30px 0;
+        text-align: center;
+    }
+
+    .tabs-custom button {
+        margin: 0 15px;
+        border-radius: 25px;
+        border: 2px solid #0080FF;
+        background: white;
+        padding: 12px 30px;
+        font-weight: 500;
+        color: #0080FF;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    .tabs-custom button:hover {
+        background: #0080FF;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 128, 255, 0.3);
+    }
+
+    .tabs-custom button.active {
+        background: #0080FF;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0, 128, 255, 0.3);
+        border-color: #0080FF;
+    }
+
+    .main-title {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+
+    .main-description {
+        color: #666;
+        font-size: 16px;
+    }
+
+    .home-container {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 250, 0.8));
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        margin-top: 20px;
+    }
+
+    .no-products {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 15px;
+        padding: 40px;
+    }
+
+    .filter-container .form-select,
+    .filter-container .form-control {
+        max-width: 200px; 
+    }
+
+    .producto-item {
+        display: block;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Contenido principal -->
 <div class="container home-container text-center my-4">
-  <h5 class="main-title"><strong>Bienvenidos a Hand&Genius - {{ current_user.nombre_completo }}</strong></h5>
-  <p class="main-description">Aplicativo web pensado especialmente para personas jóvenes como tú, que les interese brindar regalos creativos y personalizados.</p>
+    <h5 class="main-title"><strong>Bienvenidos a Hand&Genius - {{ current_user.nombre_completo }}</strong></h5>
+    <p class="main-description">Aplicativo web pensado especialmente para personas jóvenes como tú, que les interese brindar regalos creativos y personalizados.</p>
 
-  <!-- Botones de categoría -->
-  <div class="tabs-custom">
-    <button id="btnProductos">Productos</button>
-    <button id="btnFabricacion">Fabricación</button>
-  </div>
+    <div class="tabs-custom">
+        <button id="btnProductos" class="active">Productos</button>
+        <button id="btnFabricacion">Fabricación</button>
+    </div>
 
-  <!-- FILTRO DE PRODUCTOS -->
-  <div class="filter-container my-4 d-flex flex-wrap justify-content-center gap-3">
-    <select class="form-select" aria-label="Filtro por categoría" id="categoriaFiltro" name="categoria">
-      <option value="">Todas las categorías</option>
-      {% for categoria in categorias %}
-        <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
-      {% endfor %}
-    </select>
-    <input type="text" class="form-control" placeholder="Buscar por nombre..." id="nombreFiltro" name="nombre">
-    <button class="btn btn-primary" id="btnFiltrar">Filtrar</button>
-  </div>
+    <div class="filter-container my-4 d-flex flex-wrap justify-content-center gap-3">
+        <select class="form-select" aria-label="Filtro por categoría" id="categoriaFiltro" name="categoria">
+            <option value="">Todas las categorías</option>
+            {% for categoria in categorias %}
+            <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
+            {% endfor %}
+        </select>
+        
+        <select class="form-select" aria-label="Filtro por dificultad" id="dificultadFiltro" name="dificultad">
+            <option value="">Todas las dificultades</option>
+            <option value="fácil">Fácil</option>
+            <option value="intermedio">Intermedio</option>
+            <option value="avanzado">Avanzado</option>
+        </select>
 
-  <!-- Contenedor de productos -->
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4" id="productosContainer">
-    {% for producto in productos %}
-      <div class="col producto-item" data-categoria="{{ producto.id_categoria }}" data-nombre="{{ producto.nombre|lower }}">
-        <div class="product-card">
-          
-          <!-- 📸 IMAGEN O MINIATURA -->
-          <div class="product-image-container">
-            {% if producto.id_categoria == 4 %}
-              {% if producto.imagen %}
-                <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="product-image">
-              {% elif producto.url_video %}
-                <iframe class="w-100 h-100" style="border: none;"
-                        src="{{ producto.url_video | replace('watch?v=', 'embed/') }}" 
-                        allowfullscreen></iframe>
-              {% else %}
-                <img src="{{ url_for('static', filename='img/default_video.jpg') }}" 
-                    alt="Miniatura del videotutorial" class="product-image">
-              {% endif %}
-            {% else %}
-              {% if producto.imagen %}
-                <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="product-image">
-              {% else %}
-                <i class="bi bi-image no-image-placeholder"></i>
-              {% endif %}
-            {% endif %}
-          </div>
+        <input type="text" class="form-control" placeholder="Buscar por nombre..." id="nombreFiltro" name="nombre">
+        <button class="btn btn-primary" id="btnFiltrar">Filtrar</button>
+    </div>
 
-          <!-- 🏷 CATEGORÍA -->
-          {% if producto.id_categoria == 4 %}
-            <div class="product-category" style="background: linear-gradient(135deg, #6a11cb, #2575fc);">Tutorial</div>
-          {% elif producto.id_categoria == 5 %}
-            <div class="product-category" style="background: linear-gradient(135deg, #00b09b, #96c93d);">Material</div>
-          {% else %}
-            <div class="product-category">Producto</div>
-          {% endif %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4" id="productosContainer">
+        {% for producto in productos %}
+        {% if producto.tipo_video != 'premium' %}
+        <div class="col producto-item" 
+             data-categoria="{{ producto.id_categoria }}" 
+             data-nombre="{{ producto.nombre|lower }}"
+             data-dificultad="{{ producto.nivel_dificultad|lower|default('') }}"> 
+            
+            <div class="product-card">
 
-          <!-- 🧾 INFO -->
-          <div class="product-name">{{ producto.nombre }}</div>
+                <div class="product-image-container">
+                    {% if producto.id_categoria == 4 %}
+                    {% if producto.imagen %}
+                    <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="product-image">
+                    {% elif producto.url_video %}
+                    <iframe class="w-100 h-100" style="border: none;"
+                        src="{{ producto.url_video | replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+                    {% else %}
+                    <img src="{{ url_for('static', filename='img/default_video.jpg') }}" alt="Miniatura del videotutorial"
+                        class="product-image">
+                    {% endif %}
+                    {% else %}
+                    {% if producto.imagen %}
+                    <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="product-image">
+                    {% else %}
+                    <i class="bi bi-image no-image-placeholder"></i>
+                    {% endif %}
+                    {% endif %}
+                </div>
 
-          {% if producto.id_categoria == 4 %}
-            {% if producto.nivel_dificultad %}
-              <div class="product-detail text-secondary">
-                🎯 <strong>Dificultad:</strong> {{ producto.nivel_dificultad }}
-              </div>
-            {% endif %}
+                {% if producto.id_categoria == 4 %}
+                <div class="product-category" style="background: linear-gradient(135deg, #6a11cb, #2575fc);">Tutorial</div>
+                {% elif producto.id_categoria == 5 %}
+                <div class="product-category" style="background: linear-gradient(135deg, #00b09b, #96c93d);">Material</div>
+                {% else %}
+                <div class="product-category">Producto</div>
+                {% endif %}
 
-            {% if producto.duracion %}
-              <div class="product-detail text-secondary">
-                ⏱ <strong>Duración:</strong> {{ producto.duracion }}
-              </div>
-            {% endif %}
+                <div class="product-name">{{ producto.nombre }}</div>
 
-            {% if producto.calificacion_promedio %}
-              <div class="product-status mt-2">
-                {% for i in range(1, 6) %}
-                  {% if i <= producto.calificacion_promedio %}
+                {% if producto.id_categoria == 4 %}
+                {% if producto.nivel_dificultad %}
+                <div class="product-detail text-secondary">
+                    🎯 <strong>Dificultad:</strong> {{ producto.nivel_dificultad }}
+                </div>
+                {% endif %}
+
+                {% if producto.duracion %}
+                <div class="product-detail text-secondary">
+                    ⏱ <strong>Duración:</strong> {{ producto.duracion }}
+                </div>
+                {% endif %}
+
+                {% if producto.calificacion_promedio %}
+                <div class="product-status mt-2">
+                    {% for i in range(1, 6) %}
+                    {% if i <= producto.calificacion_promedio %}
                     <i class="bi bi-star-fill text-warning"></i>
-                  {% else %}
+                    {% else %}
                     <i class="bi bi-star text-muted"></i>
-                  {% endif %}
-                {% endfor %}
-              </div>
-            {% endif %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
 
-            <a href="{{ url_for('videotutoriales_bp.detalle_video', id_video=producto.id_producto|int) }}" 
-              class="btn-vermas">Ver tutorial</a>
-          {% elif producto.id_categoria == 5 %}
-            <div class="product-price">${{ "%.2f"|format(producto.precio) }}</div>
-            <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="btn-vermas">Ver más</a>
-          {% else %}
-            <div class="product-price">${{ "%.2f"|format(producto.precio) }}</div>
-            <div class="product-status">
-              {% if producto.disponible %}
-                <span class="status-badge status-available">✓ Disponible</span>
-              {% else %}
-                <span class="status-badge status-unavailable">✗ No disponible</span>
-              {% endif %}
-              {% if producto.es_personalizable %}
-                <span class="status-badge status-customizable">🎨 Personalizable</span>
-              {% endif %}
+                <a href="{{ url_for('videotutoriales_bp.detalle_video', id_video=producto.id_producto|int) }}"
+                    class="btn-vermas">Ver tutorial</a>
+                {% elif producto.id_categoria == 5 %}
+                <div class="product-price">${{ "%.2f"|format(producto.precio) }}</div>
+                <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="btn-vermas">Ver
+                    más</a>
+                {% else %}
+                <div class="product-price">${{ "%.2f"|format(producto.precio) }}</div>
+                <div class="product-status">
+                    {% if producto.disponible %}
+                    <span class="status-badge status-available">✓ Disponible</span>
+                    {% else %}
+                    <span class="status-badge status-unavailable">✗ No disponible</span>
+                    {% endif %}
+                    {% if producto.es_personalizable %}
+                    <span class="status-badge status-customizable">🎨 Personalizable</span>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="btn-vermas">Ver
+                    más</a>
+                {% endif %}
             </div>
-            <a href="{{ url_for('productos_bp.detalle_producto', id_producto=producto.id_producto) }}" class="btn-vermas">Ver más</a>
-          {% endif %}
         </div>
-      </div>
-    {% endfor %}
-  </div>
+        {% endif %}
+        {% endfor %}
+    </div>
 
-  <div class="alert no-products mt-4">
-    <h5>No hay productos disponibles</h5>
-    <p>¡Vuelve más tarde!</p>
-  </div>
+    <div class="alert no-products mt-4">
+        <h5>No hay productos disponibles</h5>
+        <p>¡Vuelve más tarde!</p>
+    </div>
 </div>
 
 <script>
-  const btnProductos = document.getElementById('btnProductos');
-  const btnFabricacion = document.getElementById('btnFabricacion');
-  const productosItems = Array.from(document.querySelectorAll('.producto-item'));
-  const btnFiltrar = document.getElementById('btnFiltrar');
-  const categoriaFiltro = document.getElementById('categoriaFiltro');
-  const nombreFiltro = document.getElementById('nombreFiltro');
-  const alertaNoProductos = document.querySelector('.no-products');
+    const btnProductos = document.getElementById('btnProductos');
+    const btnFabricacion = document.getElementById('btnFabricacion');
+    const productosItems = Array.from(document.querySelectorAll('.producto-item'));
+    const btnFiltrar = document.getElementById('btnFiltrar');
+    const categoriaFiltro = document.getElementById('categoriaFiltro');
+    const nombreFiltro = document.getElementById('nombreFiltro');
+    const dificultadFiltro = document.getElementById('dificultadFiltro'); 
+    const alertaNoProductos = document.querySelector('.no-products');
+    const todosLosBotonesTab = [btnProductos, btnFabricacion];
 
-  function filtrarProductos(categoriasPermitidas = null, nombre = null) {
-    let visibles = 0;
-    productosItems.forEach(producto => {
-      const cat = producto.dataset.categoria;
-      const nom = producto.dataset.nombre;
+    let categoriasActivas = ["1", "2", "3"];
 
-      let mostrar = true;
-      if(categoriasPermitidas && !categoriasPermitidas.includes(cat)) mostrar = false;
-      if(nombre && !nom.includes(nombre.toLowerCase())) mostrar = false;
+    function filtrarProductos(categoriasPermitidas, nombre, dificultad) {
+        let visibles = 0;
+        const nombreLower = nombre ? nombre.toLowerCase() : null;
+        const dificultadLower = dificultad ? dificultad.toLowerCase() : null; 
+        
+        productosItems.forEach(producto => {
+            const cat = producto.dataset.categoria;
+            const nom = producto.dataset.nombre;
+            const prodDificultad = producto.dataset.dificultad; 
 
-      producto.style.display = mostrar ? "block" : "none";
-      if(mostrar) visibles++;
-    });
-    alertaNoProductos.style.display = visibles === 0 ? "block" : "none";
-  }
+            let mostrar = true;
 
-  // Botones categorías
-  btnProductos.addEventListener('click', () => filtrarProductos(["1","2","3"], nombreFiltro.value));
-  btnFabricacion.addEventListener('click', () => filtrarProductos(["4","5"], nombreFiltro.value));
+            if (!categoriasActivas.includes(cat)) {
+                mostrar = false;
+            }
 
-  // Filtro por inputs
-  btnFiltrar.addEventListener('click', () => {
-    const catValue = categoriaFiltro.value ? [categoriaFiltro.value] : null;
-    const nombreValue = nombreFiltro.value.trim() || null;
-    filtrarProductos(catValue, nombreValue);
-  });
+            if (mostrar && categoriasPermitidas && !categoriasPermitidas.includes(cat)) {
+                mostrar = false;
+            }
 
-  // Mostrar productos por defecto (Productos 1,2,3)
-  filtrarProductos(["1","2","3"]);
+            if (mostrar && nombreLower && !nom.includes(nombreLower)) {
+                mostrar = false;
+            }
+
+            if (mostrar && dificultadLower) {
+                if (prodDificultad !== dificultadLower) {
+                    mostrar = false;
+                }
+            }
+            
+            producto.style.display = mostrar ? "block" : "none";
+            if (mostrar) visibles++;
+        });
+
+        alertaNoProductos.style.display = visibles === 0 ? "block" : "none";
+    }
+
+    function aplicarFiltroDesdeInputs() {
+        if (!categoriasActivas.length) return; 
+
+        const selectedCatId = categoriaFiltro.value.trim();
+        const dificultadValue = dificultadFiltro.value.trim() || null; 
+        const nombreValue = nombreFiltro.value.trim() || null;
+        
+        let categoriasAFiltrar = null;
+
+        if (selectedCatId) {
+            categoriasAFiltrar = [selectedCatId];
+        } 
+
+        filtrarProductos(categoriasAFiltrar, nombreValue, dificultadValue);
+    }
+    
+    function aplicarFiltroDesdeTab(botonClickeado, idsCategorias) {
+        todosLosBotonesTab.forEach(btn => btn.classList.remove('active'));
+        botonClickeado.classList.add('active');
+
+        categoriasActivas = idsCategorias; 
+
+        categoriaFiltro.value = ""; 
+        dificultadFiltro.value = ""; 
+
+        filtrarProductos(null, nombreFiltro.value.trim() || null, null);
+    }
+
+
+    btnProductos.addEventListener('click', () => aplicarFiltroDesdeTab(btnProductos, ["1", "2", "3"]));
+    btnFabricacion.addEventListener('click', () => aplicarFiltroDesdeTab(btnFabricacion, ["4", "5"]));
+
+    categoriaFiltro.addEventListener('change', aplicarFiltroDesdeInputs);
+    dificultadFiltro.addEventListener('change', aplicarFiltroDesdeInputs); 
+
+    btnFiltrar.addEventListener('click', aplicarFiltroDesdeInputs);
+
+    nombreFiltro.addEventListener('keyup', aplicarFiltroDesdeInputs);
+    nombreFiltro.addEventListener('input', aplicarFiltroDesdeInputs);
+
+    aplicarFiltroDesdeTab(btnProductos, ["1", "2", "3"]);
 </script>
 {% endblock %}
+m0999

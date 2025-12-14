@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis PQRS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <h3 class="fw-bold mb-4">Mis PQRS</h3>
+
+    {% if pqrs|length == 0 %}
+        <div class="alert alert-info">
+            No has enviado ninguna PQR todavía.
+        </div>
+    {% else %}
+
+    <div class="card shadow p-3">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Tipo</th>
+                    <th>Mensaje</th>
+                    <th>Estado</th>
+                    <th>Respuesta</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for p in pqrs %}
+                <tr>
+                    <td>{{ p.id_pqr }}</td>
+
+                    <td>
+                        <span class="badge bg-primary">{{ p.tipo }}</span>
+                    </td>
+
+                    <td style="max-width: 300px;">
+                        {{ p.mensaje }}
+                        <br>
+                        <small class="text-muted">{{ p.fecha }}</small>
+                    </td>
+
+                    <td>
+                        {% if p.estado == "Pendiente" %}
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% else %}
+                            <span class="badge bg-success">Respondido</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if p.respuesta %}
+                            <div class="p-2 bg-light border rounded">
+                                {{ p.respuesta }}
+                            </div>
+                        {% else %}
+                            <i class="text-muted">Aún no hay respuesta</i>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}PQRS - Admin{% endblock %}
+
+{% block content %}
+<h3 class="mb-4 fw-bold">Gestión de PQRS</h3>
+
+<!-- Filtros -->
+<div class="card shadow p-3 mb-4">
+  <form method="GET" action="{{ url_for('admin_bp.pqrs') }}" class="row g-3">
+
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Filtrar por tipo</label>
+      <select name="tipo" class="form-select">
+        <option value="">Todos</option>
+        <option value="Petición" {% if request.args.get('tipo') == 'Petición' %}selected{% endif %}>Petición</option>
+        <option value="Queja" {% if request.args.get('tipo') == 'Queja' %}selected{% endif %}>Queja</option>
+        <option value="Reclamo" {% if request.args.get('tipo') == 'Reclamo' %}selected{% endif %}>Reclamo</option>
+        <option value="Sugerencia" {% if request.args.get('tipo') == 'Sugerencia' %}selected{% endif %}>Sugerencia</option>
+        <option value="Pregunta" {% if request.args.get('tipo') == 'Pregunta' %}selected{% endif %}>Pregunta (FAQ)</option>
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label fw-bold">Estado</label>
+      <select name="estado" class="form-select">
+        <option value="">Todos</option>
+        <option value="Pendiente" {% if request.args.get('estado') == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+        <option value="Respondido" {% if request.args.get('estado') == 'Respondido' %}selected{% endif %}>Respondido</option>
+      </select>
+    </div>
+
+    <div class="col-md-4 d-flex align-items-end">
+      <button class="btn btn-primary w-100">
+        <i class="fa-solid fa-filter"></i> Aplicar filtros
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<div class="card shadow p-3">
+
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>ID</th>
+        <th>Usuario</th>
+        <th>Tipo</th>
+        <th>Asunto</th>
+        <th>Mensaje</th>
+        <th>Estado</th>
+        <th>FAQ</th>
+        <th>Respuesta / Acción</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% for p in pqrs %}
+      <tr>
+        <td>{{ p.id_pqr }}</td>
+
+        <td>
+          <b>{{ p.nombre_completo }}</b><br>
+          <small class="text-muted">{{ p.correo }}</small>
+        </td>
+
+        <td>
+          {% if p.es_pregunta == 1 %}
+            <span class="badge bg-info">Pregunta</span>
+          {% else %}
+            <span class="badge bg-primary">{{ p.tipo }}</span>
+          {% endif %}
+        </td>
+
+        <td>{{ p.asunto if p.asunto else '—' }}</td>
+
+        <td style="max-width: 300px;">
+          {{ p.mensaje }}
+          <br>
+          <small class="text-muted">{{ p.fecha }}</small>
+        </td>
+
+        <td>
+          {% if p.estado == "Pendiente" %}
+            <span class="badge bg-warning text-dark">Pendiente</span>
+          {% else %}
+            <span class="badge bg-success">Respondido</span>
+          {% endif %}
+        </td>
+
+        <td>
+          {% if p.visible_faq == 1 %}
+            <span class="badge bg-success">Visible</span>
+          <a href="{{ url_for('admin_bp.ocultar_faq', id_pqr=p.id_pqr) }}"
+            class="btn btn-sm btn-outline-danger mt-1 w-100">
+          <i class="fa-solid fa-eye-slash"></i> Ocultar de FAQ
+      </a>
+          {% else %}
+      <span class="badge bg-secondary">Oculta</span>
+        <a href="{{ url_for('admin_bp.publicar_faq', id_pqr=p.id_pqr) }}"
+         class="btn btn-sm btn-outline-success mt-1 w-100">
+          <i class="fa-solid fa-eye"></i> Publicar en FAQ
+          </a>
+      {% endif %}
+        </td>
+
+
+        <td style="width: 300px;">
+
+          {% if p.estado == "Pendiente" %}
+          
+          <form action="{{ url_for('admin_bp.responder_pqr', id_pqr=p.id_pqr) }}" method="POST">
+            <textarea name="respuesta" rows="3" class="form-control" required
+              placeholder="Escribe tu respuesta aquí..."></textarea>
+            <button class="btn btn-success btn-sm mt-2 w-100">
+              <i class="fa-solid fa-paper-plane"></i> Enviar respuesta
+            </button>
+          </form>
+
+          {% else %}
+            <div class="p-2 bg-light rounded border">
+              <b>Respuesta:</b><br>
+              {{ p.respuesta }}
+            </div>
+          {% endif %}
+
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+
+{% endblock %}

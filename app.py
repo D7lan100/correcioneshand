@@ -1,5 +1,10 @@
-# app.py
 import os
+
+# ⚠️ CRÍTICO: pymysql DEBE estar ANTES de cualquier import de Flask o MySQLdb
+import pymysql
+pymysql.install_as_MySQLdb()
+
+# Ahora sí los demás imports
 from flask import Flask
 from flask_mysqldb import MySQL
 from flask_wtf.csrf import CSRFProtect
@@ -7,7 +12,7 @@ from flask_login import LoginManager
 from itsdangerous import URLSafeTimedSerializer
 from flask_mail import Mail
 from flask_socketio import SocketIO
-from flask_session import Session  # ✅ sesiones en servidor
+from flask_session import Session
 
 from config import config
 from src.models.ModelUser import ModelUser
@@ -18,7 +23,9 @@ def create_app():
     # 🚀 Inicialización base
     # -----------------------------
     app = Flask(__name__, template_folder="src/templates", static_folder="src/static")
-    app.config.from_object(config['development'])
+    # Detectar entorno automáticamente
+    env = os.environ.get('FLASK_ENV', 'development')
+    app.config.from_object(config[env])
 
     # -----------------------------
     # 🔒 Clave secreta
@@ -79,6 +86,17 @@ def create_app():
     @login_manager.user_loader
     def load_user(id_usuario):
         return ModelUser.get_by_id(app.db, id_usuario)
+    
+    # Función para convertir saltos de línea a <br>
+    def nl2br(value):
+        # Aseguramos que el valor no sea None antes de llamar a .replace()
+        if value is None:
+            return ""
+        # Usamos safe para que Jinja2 no escape las etiquetas <br/>
+        return value.replace('\n', '<br/>')
+
+    # Registrar el filtro
+    app.jinja_env.filters['nl2br'] = nl2br
 
     # -----------------------------
     # 📦 Importar y registrar Blueprints
@@ -98,6 +116,13 @@ def create_app():
     from src.routes.videotutoriales import videotutoriales_bp
     from src.routes.chat import chat_bp
     from src.routes.favoritos import favoritos_bp
+    from src.routes.vendedor import vendedor_bp
+    from src.routes.donaciones import donaciones_bp
+    from src.routes.contacto import contacto_bp
+    from src.routes.checkout import checkout_bp
+    from src.routes.pedidos import pedidos_bp
+
+
 
     # ⚡ Registrar blueprints
     app.register_blueprint(favoritos_bp, url_prefix="/favoritos")
@@ -115,25 +140,44 @@ def create_app():
     app.register_blueprint(fabricacion_bp, url_prefix="/fabricacion")
     app.register_blueprint(videotutoriales_bp, url_prefix="/videotutoriales")
     app.register_blueprint(chat_bp, url_prefix="/chat")
+    app.register_blueprint(vendedor_bp, url_prefix='/vendedor')
+    app.register_blueprint(donaciones_bp)
+    app.register_blueprint(contacto_bp, url_prefix='/contacto')
+    app.register_blueprint(checkout_bp, url_prefix='/checkout')
+    app.register_blueprint(pedidos_bp, url_prefix='/pedidos')
+
 
     # -----------------------------
     # 🚫 Exenciones CSRF
     # -----------------------------
     csrf_exempt_endpoints = [
         'auth_bp.logout_redirect',
-        'admin_bp.agregar_producto', 'admin_bp.editar_producto',
-        'admin_bp.eliminar_producto', 'admin_bp.aprobar_suscripcion',
-        'admin_bp.rechazar_suscripcion', 'admin_bp.eliminar_usuario',
+        'admin_bp.agregar_producto', 
+        'admin_bp.editar_producto',
+        'admin_bp.eliminar_producto', 
+        'admin_bp.aprobar_suscripcion',
+        'admin_bp.rechazar_suscripcion', 
+        'admin_bp.eliminar_usuario',
         'admin_bp.admin_editar_usuario',
         'usuarios_bp.subir_video',
-        'api_bp.api_eventos', 'api_bp.api_productos',
+        'api_bp.api_eventos', 
+        'api_bp.api_productos',
         'productos_bp.guardar_texto_personalizado',
-        'productos_bp.subir_boceto', 'productos_bp.guardar_plantilla',
+        'productos_bp.subir_boceto', 
+        'productos_bp.guardar_plantilla',
         'productos_bp.registrar_formulario',
-        'navbar_bp.calendario', 'suscripciones_bp.subir_comprobante',
-        'carrito_bp.agregar', 'carrito_bp.eliminar', 'carrito_bp.vaciar', 'carrito_bp.checkout',
+        'navbar_bp.calendario', 
+        'productos_bp.calificar_producto',
+        'suscripciones_bp.subir_comprobante',
+        'carrito_bp.agregar', 
+        'carrito_bp.eliminar', 
+        'carrito_bp.vaciar', 
+        'carrito_bp.checkout',
         'videotutoriales_bp.calificar_video',
-        'favoritos_bp.agregar_favorito', 'favoritos_bp.eliminar_favorito'
+        'favoritos_bp.agregar_favorito', 
+        'favoritos_bp.eliminar_favorito',
+        'vendedor_bp.responder_solicitud',
+        'donaciones_bp.pagar_donacion'
     ]
 
     with app.app_context():
@@ -169,12 +213,16 @@ def create_app():
 
     return app, socketio
 
-
 # -----------------------------
 # 🧠 Ejecución principal
 # -----------------------------
 if __name__ == '__main__':
     app, socketio = create_app()
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
     print("\n🏠 Sitio web: http://localhost:5000")
     print("👑 Panel admin: http://localhost:5000/admin")
-    socketio.run(app, debug=True, use_reloader=False, port=5000)
+    
+    socketio.run(app, debug=debug, host='0.0.0.0', port=port)
+

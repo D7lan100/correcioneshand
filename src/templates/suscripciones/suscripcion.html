@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Suscripciones - Hand&Genius{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Encabezado -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">
+            <i class="fas fa-crown text-warning"></i> Planes de Suscripción
+        </h1>
+        <p class="lead text-muted">Elige el plan que mejor se adapte a tus necesidades</p>
+    </div>
+
+    <!-- Planes disponibles -->
+    <div class="row mb-5">
+        {% for plan in planes %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <h3 class="card-title mb-3">
+                        {% if 'premium' in plan[1]|lower %}
+                        <i class="fas fa-gem text-warning"></i>
+                        {% else %}
+                        <i class="fas fa-star text-info"></i>
+                        {% endif %}
+                        {{ plan[1] }}
+                    </h3>
+                    
+                    <p class="text-muted mb-4">{{ plan[2] }}</p>
+                    
+                    <div class="mb-4">
+                        <h2 class="display-5 fw-bold text-primary">
+                            ${{ "{:,.0f}".format(plan[3]) }}
+                            <small class="fs-6 text-muted">/ mes</small>
+                        </h2>
+                    </div>
+
+                    <!-- Beneficios del plan -->
+                    <ul class="list-unstyled text-start mb-4">
+                        {% if 'básica' in plan[1]|lower or 'basica' in plan[1]|lower %}
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Acceso a 2 videotutoriales premium al mes
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            5% de descuento en productos
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Soporte por correo
+                        </li>
+                        {% elif 'premium' in plan[1]|lower %}
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Acceso ilimitado a todos los videotutoriales
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            15% de descuento en productos
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Soporte prioritario
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i> 
+                            Contenido exclusivo premium
+                        </li>
+                        {% endif %}
+                    </ul>
+
+                    {% if suscripcion_actual and suscripcion_actual['tipo_nombre'] == plan[1] %}
+                    <button class="btn btn-success btn-lg w-100" disabled>
+                        <i class="fas fa-check"></i> Plan Actual
+                    </button>
+                    {% else %}
+                    <a href="{{ url_for('suscripciones_bp.subir_comprobante', id_tipo=plan[0]) }}" 
+                       class="btn btn-primary btn-lg w-100">
+                        <i class="fas fa-shopping-cart"></i> Solicitar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Suscripción Actual -->
+    {% if suscripcion_actual %}
+    <div class="card mb-5 border-success shadow">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-check-circle"></i> Tu Suscripción Actual
+            </h4>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <h5 class="text-success fw-bold">
+                        {% if suscripcion_actual['es_premium'] %}
+                        <i class="fas fa-gem"></i> Plan Premium
+                        {% else %}
+                        <i class="fas fa-star"></i> Plan {{ suscripcion_actual['tipo_nombre'] }}
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted mb-0">{{ suscripcion_actual['tipo_descripcion'] }}</p>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="bg-light p-3 rounded">
+                                <small class="text-muted d-block">Estado</small>
+                                <span class="badge bg-success">{{ suscripcion_actual['estado']|upper }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="bg-light p-3 rounded">
+                                <small class="text-muted d-block">Inicio</small>
+                                <strong>{{ suscripcion_actual['fecha_inicio'].strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="bg-light p-3 rounded">
+                                <small class="text-muted d-block">Vence</small>
+                                <strong class="text-danger">{{ suscripcion_actual['fecha_fin'].strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if suscripcion_actual['dias_restantes'] <= 7 %}
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>¡Atención!</strong> Tu suscripción vence en {{ suscripcion_actual['dias_restantes'] }} días.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Videotutoriales Premium -->
+    {% if suscripcion_actual and tutoriales_premium %}
+    <div class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold">
+                <i class="fas fa-video text-warning"></i> Videotutoriales Premium
+            </h2>
+            {% if suscripcion_actual['es_basica'] %}
+            <span class="badge bg-info fs-6">Acceso Básico - 2 Tutoriales</span>
+            {% elif suscripcion_actual['es_premium'] %}
+            <span class="badge bg-warning fs-6">Acceso Completo - Ilimitado</span>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            {% for tutorial in tutoriales_premium %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm hover-card">
+                    {% if tutorial[6] %}
+                    <img src="{{ url_for('static', filename='uploads/productos/' + tutorial[6]) }}" 
+                        class="card-img-top" 
+                        alt="{{ tutorial[1] }}" 
+                        style="height: 250px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center" 
+                        style="height: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-video fa-4x text-white"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold">
+                            <i class="fas fa-crown text-warning"></i> {{ tutorial[1] }}
+                        </h5>
+                        <p class="card-text text-muted">
+                            {{ tutorial[2][:100] if tutorial[2] }}{% if tutorial[2] and tutorial[2]|length > 100 %}...{% endif %}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-primary">
+                                <i class="fas fa-clock"></i> 
+                                {{ tutorial[4] if tutorial[4] else 'Por definir' }}
+                            </span>
+                            <span class="badge bg-info">
+                                <i class="fas fa-signal"></i>
+                                {{ tutorial[5] if tutorial[5] else 'Todos los niveles' }}
+                            </span>
+                        </div>
+                        
+                        <a href="{{ url_for('videotutoriales_bp.ver_video', id_video=tutorial[0]) }}" 
+                        class="btn btn-primary w-100">
+                            <i class="fas fa-play"></i> Ver Tutorial
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if suscripcion_actual['es_basica'] %}
+        <div class="alert alert-info d-flex align-items-center mt-4">
+            <i class="fas fa-info-circle fa-2x me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">¿Quieres acceso a todos los tutoriales?</h5>
+                <p class="mb-0">
+                    Actualiza a la suscripción <strong>Premium</strong> para desbloquear todo el contenido exclusivo.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% elif suscripcion_actual %}
+    <div class="alert alert-warning mt-4">
+        <i class="fas fa-exclamation-triangle"></i> 
+        No hay videotutoriales premium disponibles en este momento.
+    </div>
+    {% endif %}
+
+    <!-- Historial de Suscripciones -->
+    {% if historial %}
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-history"></i> Historial de Suscripciones
+            </h4>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Plan</th>
+                            <th>Estado</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sub in historial %}
+                        <tr>
+                            <td>
+                                <strong>{{ sub[5] }}</strong>
+                            </td>
+                            <td>
+                                {% if sub[4] == 'aprobada' %}
+                                <span class="badge bg-success">{{ sub[4]|upper }}</span>
+                                {% elif sub[4] == 'pendiente' %}
+                                <span class="badge bg-warning">{{ sub[4]|upper }}</span>
+                                {% elif sub[4] == 'rechazada' %}
+                                <span class="badge bg-danger">{{ sub[4]|upper }}</span>
+                                {% elif sub[4] == 'vencida' %}
+                                <span class="badge bg-secondary">{{ sub[4]|upper }}</span>
+                                {% else %}
+                                <span class="badge bg-dark">{{ sub[4]|upper }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ sub[2] if sub[2] else 'N/A' }}</td>
+                            <td>{{ sub[3] if sub[3] else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mensaje si no tiene suscripción -->
+    {% if not suscripcion_actual %}
+    <div class="alert alert-info d-flex align-items-center shadow-sm">
+        <i class="fas fa-info-circle fa-3x me-3"></i>
+        <div>
+            <h5 class="alert-heading mb-1">¡No tienes una suscripción activa!</h5>
+            <p class="mb-0">
+                Elige uno de nuestros planes para acceder a contenido exclusivo, 
+                descuentos especiales y mucho más.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Efectos hover para las cards */
+.hover-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.hover-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2) !important;
+    border-color: #007bff;
+}
+
+/* Gradiente para imagen por defecto */
+.bg-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Animación para badges */
+.badge {
+    transition: all 0.2s ease;
+}
+
+.badge:hover {
+    transform: scale(1.05);
+}
+
+/* Estilo para tabla */
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Card de suscripción actual */
+.border-success {
+    border-width: 2px !important;
+}
+
+/* Botones */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hover-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .display-4 {
+        font-size: 2rem;
+    }
+}
+</style>
+{% endblock %}

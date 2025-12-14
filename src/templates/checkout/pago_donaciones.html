@@ -1,0 +1,93 @@
+pago_donaciones.html
+<div class="container my-4">
+
+    <h4 class="mb-3">Método de Pago</h4>
+
+    <!-- Selector -->
+    <div class="mb-3">
+        <label class="form-label"><strong>Selecciona un método:</strong></label>
+        <select id="metodoPagoDonacion" class="form-select" onchange="mostrarCamposDonacion()">
+            <option disabled selected>Elige una opción</option>
+            <option value="tarjeta">Tarjeta de crédito / débito</option>
+            <option value="pse">PSE</option>
+            <option value="paypal">PayPal</option>
+        </select>
+    </div>
+
+    <hr>
+
+    <!-- Contenedor donde se muestran los campos según el método -->
+    <div id="contenedor-pagos-donacion">
+
+        <!-- TARJETA -->
+        <div class="metodo-donacion" id="tarjeta_campos" style="display: none;">
+            <h5 class="mb-3">Datos de la Tarjeta</h5>
+
+            <input type="text" class="form-control mb-2" name="numero_tarjeta"
+                placeholder="Número de tarjeta">
+
+            <div class="row">
+                <div class="col-6">
+                    <input type="text" class="form-control mb-2" name="expira"
+                        placeholder="MM/YY">
+                </div>
+                <div class="col-6">
+                    <input type="text" class="form-control mb-2" name="cvv"
+                        placeholder="CVV">
+                </div>
+            </div>
+
+            <input type="text" class="form-control mb-2" name="nombre_tarjeta"
+                placeholder="Nombre del titular">
+        </div>
+
+        <!-- PSE -->
+        <div class="metodo-donacion" id="pse_campos" style="display: none;">
+            <h5 class="mb-3">Pago con PSE</h5>
+
+            <select class="form-control mb-2" name="banco">
+                <option disabled selected>Selecciona tu banco</option>
+                <option>Bancolombia</option>
+                <option>Davivienda</option>
+                <option>Banco de Bogotá</option>
+                <option>Nequi</option>
+                <option>BBVA</option>
+            </select>
+
+            <input type="text" class="form-control mb-2" name="titular"
+                placeholder="Nombre del titular">
+        </div>
+
+        <!-- PAYPAL -->
+        <div class="metodo-donacion" id="paypal_campos" style="display: none;">
+            <h5 class="mb-3">PayPal</h5>
+            <input type="email" class="form-control mb-2" name="correo_paypal"
+                placeholder="Correo asociado a PayPal">
+        </div>
+
+    </div>
+
+</div>
+
+<!-- SCRIPT DE CAMBIO DE MÉTODO -->
+<script>
+    function mostrarCamposDonacion() {
+        const metodo = document.getElementById("metodoPagoDonacion").value;
+
+        // Ocultar todos
+        document.querySelectorAll(".metodo-donacion").forEach(div => {
+            div.style.display = "none";
+        });
+
+        // Mostrar solo el seleccionado
+        if (metodo === "tarjeta") {
+            document.getElementById("tarjeta_campos").style.display = "block";
+        }
+        if (metodo === "pse") {
+            document.getElementById("pse_campos").style.display = "block";
+        }
+        if (metodo === "paypal") {
+            document.getElementById("paypal_campos").style.display = "block";
+        }
+    }
+</script>

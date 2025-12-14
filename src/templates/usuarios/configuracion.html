@@ -213,15 +213,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Categoría</label>
-                    <select class="form-select" name="id_categoria" required>
-                        <option value="" disabled selected>Selecciona una categoría</option>
-                        {% for categoria in categorias %}
-                            {% if categoria.id_categoria != 4 %}
-                                <option value="{{ categoria.id_categoria }}">{{ categoria.nombre }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
+                    <!-- Categoría (automática = 1) -->
+                    <input type="hidden" name="id_categoria" value="1">
+
                 </div>
 
                 <div class="mb-3">
@@ -386,29 +380,55 @@
             </p>
         </div>
 
+        <!-- 🧩 MIS PRODUCTOS -->
         <div class="tab-pane fade" id="misproductos" role="tabpanel">
-        <h5 class="mb-3"><i class="bi bi-box-seam"></i> Mis Productos</h5>
-        <div class="row">
-            {% for p in productos_usuario %}
-            <div class="col-md-4 mb-4">
-                <div class="card shadow-sm">
-                <img src="{{ p.imagen or url_for('static', filename='img/default_product.jpg') }}" class="card-img-top" alt="{{ p.nombre }}">
-                <div class="card-body">
-                    <h5 class="card-title">{{ p.nombre }}</h5>
-                    <p class="card-text text-muted">{{ p.descripcion }}</p>
-                    <p><strong>${{ "%.2f"|format(p.precio) }}</strong></p>
-                    <div class="d-flex justify-content-between">
-                    <a href="{{ url_for('productos_bp.detalle_producto', id=p.id_producto) }}" class="btn btn-primary btn-sm">Ver</a>
-                    <a href="{{ url_for('usuarios_bp.editar_producto', id_producto=p.id_producto) }}" class="btn btn-warning btn-sm"><i class="bi bi-pencil"></i></a>
+            <h5 class="mb-3 text-center"><i class="bi bi-box-seam"></i> Mis Productos</h5>
+
+            <div class="row">
+                <!--<p>Productos cargados: {{ productos_usuario }}</p>  -->
+                {% for p in productos_usuario %}
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <img src="{{ p.imagen or url_for('static', filename='img/default_product.jpg') }}" 
+                            class="card-img-top" alt="{{ p.nombre }}">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ p.nombre }}</h5>
+                            <p class="card-text text-muted">{{ p.descripcion }}</p>
+                            <p><strong>${{ "%.2f"|format(p.precio) }}</strong></p>
+
+                            <div class="mt-auto d-flex justify-content-around align-items-center gap-2">
+                                <!-- Ver -->
+                                <a href="{{ url_for('productos_bp.detalle_producto', id_producto=p.id_producto) }}"
+                                    class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+
+                                <!-- Editar -->
+                                <a href="{{ url_for('usuarios_bp.editar_producto', id_producto=p.id_producto) }}" 
+                                    class="btn btn-outline-warning btn-sm d-flex align-items-center gap-1">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+
+                                <!-- Eliminar -->
+                                <form action="{{ url_for('usuarios_bp.eliminar_producto', id_producto=p.id_producto) }}" 
+                                    method="POST" 
+                                    onsubmit="return confirm('¿Seguro que deseas eliminar este producto?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
-        {% if not productos_usuario %}
-            <div class="alert alert-info text-center mt-3">Aún no has subido productos.</div>
-        {% endif %}
+
+            {% if not productos_usuario %}
+                <div class="alert alert-info text-center mt-3">
+                    <i class="bi bi-info-circle"></i> Aún no has subido productos.
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -425,4 +445,3 @@
     })
 </script>
 {% endblock %}
-

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4"> Sugerencias de Usuarios</h2>
+    <h2 class="mb-4">Sugerencias de Usuarios</h2>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -47,36 +47,48 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if s.estado == 'pendiente' %}
+                            <!-- ✅ Aceptar -->
                             <button class="btn btn-success btn-sm" 
                                     data-bs-toggle="modal" 
-                                    data-bs-target="#modalRetro{{ s.id_sugerencia }}" 
+                                    data-bs-target="#modalAprobar{{ s.id_sugerencia }}" 
                                     title="Aprobar">
                                 <i class="fas fa-check"></i>
                             </button>
+
+                            <!-- ❌ Rechazar -->
                             <button class="btn btn-danger btn-sm"
                                     data-bs-toggle="modal"
-                                    data-bs-target="#modalRechazo{{ s.id_sugerencia }}"
+                                    data-bs-target="#modalRechazar{{ s.id_sugerencia }}"
                                     title="Rechazar">
                                 <i class="fas fa-times"></i>
                             </button>
-                            {% else %}
-                                <em>Sin acciones</em>
+
+                            <!-- 🕓 Volver a Pendiente -->
+                            {% if s.estado != 'pendiente' %}
+                            <form action="{{ url_for('admin_bp.cambiar_estado_sugerencia', id_sugerencia=s.id_sugerencia) }}" 
+                                  method="POST" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="estado" value="pendiente">
+                                <button type="submit" class="btn btn-warning btn-sm" title="Marcar como pendiente">
+                                    <i class="fas fa-clock"></i>
+                                </button>
+                            </form>
                             {% endif %}
                         </td>
                     </tr>
 
                     <!-- Modal Aprobación -->
-                    <div class="modal fade" id="modalRetro{{ s.id_sugerencia }}" tabindex="-1" aria-labelledby="modalRetroLabel{{ s.id_sugerencia }}" aria-hidden="true">
+                    <div class="modal fade" id="modalAprobar{{ s.id_sugerencia }}" tabindex="-1" aria-labelledby="modalAprobarLabel{{ s.id_sugerencia }}" aria-hidden="true">
                       <div class="modal-dialog">
                         <div class="modal-content">
                           <div class="modal-header bg-success text-white">
                             <h5 class="modal-title">Aprobar Sugerencia</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                           </div>
-                          <form action="{{ url_for('admin_bp.admin_aprobar_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST">
+                          <form action="{{ url_for('admin_bp.cambiar_estado_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST">
                             <div class="modal-body">
                               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <input type="hidden" name="estado" value="aceptada">
                               <div class="mb-3">
                                 <label class="form-label">Retroalimentación (opcional)</label>
                                 <textarea class="form-control" name="retroalimentacion" rows="3" placeholder="Escribe un mensaje para el usuario..."></textarea>
@@ -92,16 +104,17 @@
                     </div>
 
                     <!-- Modal Rechazo -->
-                    <div class="modal fade" id="modalRechazo{{ s.id_sugerencia }}" tabindex="-1" aria-labelledby="modalRechazoLabel{{ s.id_sugerencia }}" aria-hidden="true">
+                    <div class="modal fade" id="modalRechazar{{ s.id_sugerencia }}" tabindex="-1" aria-labelledby="modalRechazarLabel{{ s.id_sugerencia }}" aria-hidden="true">
                       <div class="modal-dialog">
                         <div class="modal-content">
                           <div class="modal-header bg-danger text-white">
                             <h5 class="modal-title">Rechazar Sugerencia</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                           </div>
-                          <form action="{{ url_for('admin_bp.admin_rechazar_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST">
+                          <form action="{{ url_for('admin_bp.cambiar_estado_sugerencia', id_sugerencia=s.id_sugerencia) }}" method="POST">
                             <div class="modal-body">
                               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                              <input type="hidden" name="estado" value="rechazada">
                               <div class="mb-3">
                                 <label class="form-label">Motivo del rechazo</label>
                                 <textarea class="form-control" name="retroalimentacion" rows="3" placeholder="Explica brevemente el motivo..."></textarea>
@@ -115,7 +128,6 @@
                         </div>
                       </div>
                     </div>
-
                     {% endfor %}
                 </tbody>
             </table>

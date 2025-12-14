@@ -10,6 +10,26 @@
   </button>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <input type="text" id="searchInput" class="form-control" placeholder="Buscar productos por nombre, descripción o ID...">
+  </div>
+  <div class="col-md-3">
+    <select id="categoryFilter" class="form-select">
+      <option value="">Categoría</option>
+      {% for c in categorias %}
+        <option value="{{ c.id_categoria }}">{{ c.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <select id="personalizableFilter" class="form-select">
+      <option value="">Todos</option>
+      <option value="1">Personalizable</option>
+      <option value="0">Estándar</option>
+    </select>
+  </div>
+</div>
 <div class="card shadow-sm">
   <div class="card-body">
     <div class="table-responsive">
@@ -29,7 +49,7 @@
         </thead>
         <tbody>
           {% for producto in productos %}
-          <tr>
+          <tr data-category-id="{{ producto.id_categoria }}" data-personalizable="{{ producto.es_personalizable }}"> 
             <td>{{ producto.id_producto }}</td>
             <td>{{ producto.nombre }}</td>
             <td>{{ producto.descripcion or '' }}</td>
@@ -57,7 +77,6 @@
               {% endif %}
             </td>
 
-            <!-- 🔹 BOTONES -->
             <td class="text-center">
               <div class="d-flex justify-content-center gap-2">
                 <button class="btn btn-sm btn-primary edit-btn d-flex align-items-center gap-1"
@@ -93,7 +112,6 @@
   </div>
 </div>
 
-<!-- 🔹 MODAL: Agregar Producto -->
 <div class="modal fade" id="modalAddProducto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -154,7 +172,6 @@
   </div>
 </div>
 
-<!-- 🔹 MODAL: Editar Producto -->
 <div class="modal fade" id="modalEditProducto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -216,7 +233,6 @@
   </div>
 </div>
 
-<!-- 🔹 MODAL: Confirmar Eliminación -->
 <div class="modal fade" id="modalDeleteProducto" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-sm modal-dialog-centered">
     <div class="modal-content">
@@ -264,5 +280,52 @@
       new bootstrap.Modal(document.getElementById('modalDeleteProducto')).show();
     });
   });
+
+  // 🔹 FUNCIÓN DE FILTRADO DE TABLA (Buscador, Categoría y Personalizable)
+  function filterTable() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const selectedCategoryId = document.getElementById('categoryFilter').value;
+    const selectedPersonalizable = document.getElementById('personalizableFilter').value;
+    
+    const tableBody = document.querySelector('.table-responsive tbody');
+    const rows = tableBody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+      // Omitir la fila de 'No hay productos registrados.'
+      if (row.querySelector('td[colspan="9"]')) {
+        return; 
+      }
+      
+      // Obtener datos para el filtro de texto
+      const id = row.cells[0].textContent.toLowerCase();
+      const nombre = row.cells[1].textContent.toLowerCase();
+      const descripcion = row.cells[2].textContent.toLowerCase();
+      
+      // Obtener datos para los filtros de Select (de los atributos de la fila)
+      const rowCategoryId = row.dataset.categoryId || '';
+      const rowPersonalizable = row.dataset.personalizable;
+
+      // 1. Aplicar filtro de búsqueda (coincidencia con ID, Nombre o Descripción)
+      const passesSearch = id.includes(searchTerm) || nombre.includes(searchTerm) || descripcion.includes(searchTerm);
+      
+      // 2. Aplicar filtro de categoría (si el filtro es 'Todas' (value=''), pasa. De lo contrario, deben coincidir).
+      const passesCategory = (selectedCategoryId === '' || rowCategoryId === selectedCategoryId);
+      
+      // 3. Aplicar filtro de personalizable (si el filtro es 'Todos' (value=''), pasa. De lo contrario, deben coincidir).
+      const passesPersonalizable = (selectedPersonalizable === '' || rowPersonalizable === selectedPersonalizable);
+      
+      // Mostrar la fila si pasa los TRES filtros simultáneamente
+      if (passesSearch && passesCategory && passesPersonalizable) {
+        row.style.display = ''; 
+      } else {
+        row.style.display = 'none'; 
+      }
+    });
+  }
+
+  // Asignar la función de filtrado a los eventos de los tres elementos de entrada
+  document.getElementById('searchInput').addEventListener('keyup', filterTable);
+  document.getElementById('categoryFilter').addEventListener('change', filterTable);
+  document.getElementById('personalizableFilter').addEventListener('change', filterTable);
 </script>
 {% endblock %}

@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block title %}Contacto - Hand&Genius{% endblock %}
 
 {% block customCSS %}
@@ -118,65 +117,71 @@
   </div>
 
   <!-- PQR -->
-  <div id="pqr" class="card-custom hidden">
-    <h4>Enviar PQR</h4>
-    <button onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLSfGZPXyBhu7YIBO7_eVrZjyxjmv53ZA23bg_qOqhV4PGrrPgg/viewform?usp=dialog', '_blank')">
-      Documento de Contacto
-    </button>
-  </div>
+<div id="pqr" class="card-custom hidden">
+  <h4 class="mb-3">Documento de Contacto (PQR)</h4>
 
-  <!-- ✅ FAQ COMPLETA -->
-  <div id="faq" class="card-custom hidden text-start">
-    <h4 class="mb-3">Preguntas Frecuentes</h4>
-    <div class="accordion" id="faqAccordion">
-      {% for i in range(1, 16) %}
-      {% set preguntas = [
-        "¿Qué es Hand&Genius?",
-        "¿Cómo puedo registrarme en Hand&Genius?",
-        "¿Puedo comprar sin registrarme?",
-        "¿Qué tipo de productos personalizados ofrecen?",
-        "¿Cómo funciona la personalización de productos?",
-        "¿Los tutoriales son gratuitos?",
-        "¿Qué beneficios tiene la suscripción?",
-        "¿Cómo puedo pagar mis compras?",
-        "¿Realizan envíos a todo el país?",
-        "¿Cuánto tarda en llegar mi pedido?",
-        "¿Puedo cancelar o modificar un pedido?",
-        "¿Cómo hago una sugerencia sobre la plataforma?",
-        "¿Qué hago si tengo un problema con mi pedido?",
-        "¿Puedo compartir mis tutoriales o creaciones?",
-        "¿Cómo participo en talleres o eventos?"
-      ] %}
-      {% set respuestas = [
-        "Hand&Genius es una plataforma donde puedes crear y personalizar regalos únicos y aprender con tutoriales exclusivos de manualidades.",
-        "Solo necesitas tu correo electrónico y una contraseña; luego confirmas tu cuenta por correo.",
-        "No, para garantizar la seguridad y el seguimiento de pedidos es necesario tener una cuenta.",
-        "Ofrecemos ramos, peluches, cartas, cuadros, kits DIY y más, todos personalizables.",
-        "Cada producto tiene un formulario donde eliges texto, colores, imágenes y detalles.",
-        "Algunos sí, pero los exclusivos requieren una suscripción activa.",
-        "Descuentos, tutoriales premium, prioridad en pedidos y acceso a talleres.",
-        "Aceptamos tarjetas, PSE, Nequi y Daviplata.",
-        "Sí, enviamos a cualquier ciudad de Colombia mediante empresas aliadas.",
-        "Entre 3 y 7 días hábiles, dependiendo de la personalización.",
-        "Sí, antes de que entre en producción; contáctanos desde tu perfil.",
-        "Desde tu perfil, sección “Sugerencias de la comunidad”.",
-        "Contáctanos desde la sección “Contacto” o tu perfil para asistencia.",
-        "Sí, los usuarios registrados pueden compartir sus ideas y proyectos.",
-        "Consulta el calendario en tu panel de usuario para registrarte."
-      ] %}
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="q{{ i }}">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#a{{ i }}">
-            {{ preguntas[i-1] }}
-          </button>
-        </h2>
-        <div id="a{{ i }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-          <div class="accordion-body">{{ respuestas[i-1] }}</div>
-        </div>
-      </div>
-      {% endfor %}
+<form action="{{ url_for('contacto_bp.enviar_pqr') }}" method="POST">
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Asunto</label>
+        <input type="text" name="asunto" class="form-control" required>
     </div>
-  </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Tipo de solicitud</label>
+        <select name="tipo" class="form-select" required>
+            <option value="">Selecciona un tipo...</option>
+            <option value="Petición">Petición</option>
+            <option value="Queja">Queja</option>
+            <option value="Reclamo">Reclamo</option>
+            <option value="Pregunta">Pregunta (FAQ)</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Mensaje</label>
+        <textarea name="mensaje" class="form-control" rows="4" required></textarea>
+    </div>
+
+    <button class="btn btn-primary w-100">Enviar</button>
+</form>
+
+
+</div>
+
+<!-- SECCIÓN FAQ -->
+<div id="faq" class="card-custom hidden text-start">
+    <h4 class="mb-3">📘 Preguntas Frecuentes</h4>
+
+    {% if faq|length == 0 %}
+        <p class="text-muted">No hay preguntas frecuentes disponibles por ahora.</p>
+    {% else %}
+        <div class="accordion" id="faqAccordion">
+            {% for item in faq %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapse{{ loop.index }}">
+                        {{ item.asunto }}
+                    </button>
+                </h2>
+
+                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
+                     data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        <p><strong>Pregunta:</strong> {{ item.mensaje }}</p>
+                        <p><strong>Respuesta:</strong> {{ item.respuesta }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+
+
 
   <!-- ✅ CHAT EN VIVO -->
   <div id="chat" class="card-custom hidden">

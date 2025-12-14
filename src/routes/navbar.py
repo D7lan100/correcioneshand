@@ -7,6 +7,7 @@ from src.models.ModelCalendario import ModelCalendario
 from src.models.ModelSugerencia import ModelSugerencia 
 from src.models.entities.Calendario import Calendario
 from src.models.entities.User import User
+from src.database.db import get_connection
 
 navbar_bp = Blueprint('navbar_bp', __name__)
 
@@ -60,9 +61,64 @@ def actualizar_perfil():
 def donaciones():
     return render_template("navbar/donaciones.html")
 
+# ============================================================
+# 🔄 CONTACTO - CON FAQs CARGADAS DIRECTAMENTE
+# ============================================================
 @navbar_bp.route('/contacto', endpoint='contacto')
 def contacto():
-    return render_template("navbar/contacto.html")
+    """Carga la página de contacto con las FAQs"""
+    print("\n" + "="*60)
+    print("🔍 NAVBAR: Cargando página de contacto")
+    print("="*60)
+    
+    try:
+        db = get_connection()
+        cursor = db.cursor()
+        
+        print("\n📝 Ejecutando consulta de FAQs...")
+        
+        sql_query = """
+            SELECT 
+            asunto, 
+            mensaje, 
+            respuesta
+            FROM pqr
+            WHERE es_pregunta = 1
+            AND visible_faq = 1
+            AND respuesta IS NOT NULL
+            AND CHAR_LENGTH(TRIM(respuesta)) > 0
+            AND asunto <> '0'
+            AND mensaje <> '0'
+            AND respuesta <> '0'
+            ORDER BY fecha DESC
+        """
+
+        
+        cursor.execute(sql_query)
+        faq = cursor.fetchall()
+        
+        print(f"✅ FAQs encontradas: {len(faq)}")
+        
+        if len(faq) > 0:
+            print("\n📋 Lista de FAQs:")
+        for idx, item in enumerate(faq, 1):
+            try:
+                print(f"{idx}. {item[0]}")
+            except Exception:
+                print(f"{idx}. [ERROR EN REGISTRO] →", item)
+        
+        print("="*60 + "\n")
+
+        cursor.close()
+        db.close()
+
+        return render_template("contacto.html", faq=faq)
+        
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template("contacto.html", faq=[])
 
 @navbar_bp.route('/calendario', methods=['GET', 'POST'], endpoint='calendario')
 @login_required
