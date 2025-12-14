@@ -9,4 +9,4 @@ database/
 *.db
 *.sqlite
 *.sqlite3
-flask_session/
+flask_session/env/
