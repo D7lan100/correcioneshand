@@ -176,6 +176,9 @@ Este proyecto es de código abierto y está disponible bajo la licencia MIT.
 
 **D7lan100**
 - GitHub: [@D7lan100](https://github.com/D7lan100)
+**JohannL27**
 - GitHub: [@JohannL27](https://github.com/JohannL27)
+**Copetin999**
 - GitHub: [@Copetin999](https://github.com/Copetin999)
+**juanesteban999**
 - GitHub: [@juanesteban999](https://github.com/juanesteban999)
