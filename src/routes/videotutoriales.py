@@ -161,25 +161,65 @@ def ver_video(id_video):
     cursor = db.connection.cursor()
     
     cursor.execute("""
-        SELECT p.*, u.nombre_completo as autor,
-               COALESCE(AVG(c.puntuacion), 0) as promedio_calificacion,
-               COUNT(c.id_calificacion) as total_calificaciones
+        SELECT p.id_producto, p.nombre, p.descripcion, p.precio, p.imagen,
+               p.id_categoria, p.id_vendedor, p.instrucciones, 
+               p.tipo_video, p.url_video, p.archivo_video,
+               p.calificacion_promedio, p.nivel_dificultad, p.duracion, p.herramientas,
+               u.nombre_completo
         FROM productos p
         LEFT JOIN usuarios u ON p.id_vendedor = u.id_usuario
-        LEFT JOIN calificaciones c ON p.id_producto = c.id_producto
         WHERE p.id_producto = %s AND p.id_categoria = 4
-        GROUP BY p.id_producto
     """, (id_video,))
     
-    video = cursor.fetchone()
-    cursor.close()
+    row = cursor.fetchone()
     
-    if not video:
+    if not row:
         flash('Video no encontrado', 'danger')
+        cursor.close()
         return redirect(url_for('videotutoriales_bp.lista_videos'))
     
-    tipo_video = video[11]
+    # Obtener comentarios
+    cursor.execute("""
+        SELECT c.puntuacion, c.comentario, c.fecha_calificacion, u.nombre_completo
+        FROM calificaciones c
+        LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
+        WHERE c.id_producto = %s
+        ORDER BY c.fecha_calificacion DESC
+    """, (id_video,))
+    comentarios = [
+        {
+            'puntuacion': r[0],
+            'comentario': r[1],
+            'fecha_calificacion': r[2].strftime("%d-%m-%Y %H:%M") if r[2] else 'N/A',
+            'nombre_usuario': r[3] or "Anónimo"
+        } for r in cursor.fetchall()
+    ]
+    cursor.close()
+    
+    # Convertir tupla a diccionario
+    video = {
+        'id_producto': row[0],
+        'nombre': row[1],
+        'descripcion': row[2],
+        'precio': row[3],
+        'imagen': row[4],
+        'id_categoria': row[5],
+        'id_vendedor': row[6],
+        'instrucciones': row[7],
+        'tipo_video': row[8],
+        'url_video': row[9],
+        'archivo_video': row[10],
+        'calificacion_promedio': row[11],
+        'nivel_dificultad': row[12],
+        'duracion': row[13],
+        'herramientas': row[14],
+        'nombre_usuario': row[15] or "Administrador",
+        'comentarios': comentarios
+    }
+    
+    tipo_video = video['tipo_video']
 
+    # Verificar acceso
     puede_ver, razon = ModelSuscripcion.puede_ver_tutorial(
         db, current_user.id_usuario, tipo_video
     )
@@ -197,13 +237,12 @@ def ver_video(id_video):
         db, current_user.id_usuario
     )
     
+    # USA EL TEMPLATE QUE YA EXISTE
     return render_template(
-        'videotutoriales/ver_video.html',
+        'videotutoriales/videotutorial_detalle.html',  # ← CAMBIADO AQUÍ
         video=video,
-        suscripcion=suscripcion,
-        user=current_user
+        suscripcion=suscripcion
     )
-
 
 # ==========================================================
 # 📋 LISTA CON INDICADORES DE ACCESO
@@ -329,4 +368,36 @@ def mi_progreso():
         'videotutoriales/mi_progreso.html',
         suscripcion=suscripcion,
         estadisticas=estadisticas
+    )
+    
+@videotutoriales_bp.route('/tienda-individual')
+@login_required
+def tienda_individual():
+    db = current_app.db
+    cursor = db.connection.cursor()
+    
+    # Según tu imagen: p.* traerá id_producto(0), nombre(1), descripcion(2), precio(3), stock(4), imagen(5)...
+    # Agregamos la condición p.tipo_video = 'premium'
+    cursor.execute("""
+        SELECT p.*, u.nombre_completo as autor,
+               COALESCE(AVG(c.puntuacion), 0) as promedio_calificacion
+        FROM productos p
+        LEFT JOIN usuarios u ON p.id_vendedor = u.id_usuario
+        LEFT JOIN calificaciones c ON p.id_producto = c.id_producto
+        WHERE p.id_categoria = 4 AND p.tipo_video = 'premium'
+        GROUP BY p.id_producto
+        ORDER BY p.id_producto DESC
+    """)
+    
+    videos = cursor.fetchall()
+    cursor.close()
+    
+    suscripcion = ModelSuscripcion.obtener_suscripcion_activa(
+        db, current_user.id_usuario
+    )
+    
+    return render_template(
+        'videotutoriales/tienda_individual.html',
+        videos=videos,
+        suscripcion=suscripcion
     )

@@ -141,6 +141,23 @@ def ver():
             
             es_personalizado = bool(texto or imagen_personalizada or plantilla or formulario)
 
+            # --- PARSEO DE JSON PARA PLANTILLAS Y FORMULARIOS ---
+            plantilla_dict = None
+            if isinstance(plantilla, str):
+                try:
+                    data = json.loads(plantilla)
+                    plantilla_dict = data.get('plantilla', data)
+                except:
+                    plantilla_dict = None
+
+            formulario_dict = None
+            if isinstance(formulario, str):
+                try:
+                    data = json.loads(formulario)
+                    formulario_dict = data.get('formulario', data)
+                except:
+                    formulario_dict = None
+
             items.append({
                 'id_detalle': id_detalle,
                 'id_producto': id_producto,
@@ -151,7 +168,9 @@ def ver():
                 'texto_personalizado': texto,
                 'imagen_personalizada': imagen_personalizada,
                 'plantilla_seleccionada': plantilla,
+                'plantilla_dict': plantilla_dict,
                 'formulario_seleccionado': formulario,
+                'formulario_dict': formulario_dict,
                 'imagen_producto': imagen_producto,
                 'es_personalizado': es_personalizado,
                 'estado_vendedor': estado_vendedor,
@@ -163,37 +182,11 @@ def ver():
         
         total = round(total, 2)
         
-        for item in items:
-
-            # ---- PLANTILLA ----
-            plantilla_raw = item.get('plantilla_seleccionada')
-            if isinstance(plantilla_raw, str):
-                try:
-                    data = json.loads(plantilla_raw)
-                    # permite JSON como {"plantilla": {...}} ó {...}
-                    item['plantilla_dict'] = data.get('plantilla', data)
-                except:
-                    item['plantilla_dict'] = None
-            else:
-                item['plantilla_dict'] = None
-
-            # ---- FORMULARIO ----
-            formulario_raw = item.get('formulario_seleccionado')
-            if isinstance(formulario_raw, str):
-                try:
-                    data = json.loads(formulario_raw)
-                    # permite JSON como {"formulario": {...}} ó {...}
-                    item['formulario_dict'] = data.get('formulario', data)
-                except:
-                    item['formulario_dict'] = None
-            else:
-                item['formulario_dict'] = None
-        
     return render_template('navbar/carrito.html', items=items, total=total)
 
 
 # ----------------------------
-# Agregar producto (NO PERSONALIZADO) al carrito
+# Agregar producto (o video) al carrito insertando en BD
 # ----------------------------
 @carrito_bp.route('/agregar/<int:id_producto>', methods=['POST'])
 @login_required
@@ -212,6 +205,7 @@ def agregar(id_producto):
             flash("❌ Producto no encontrado.", "danger")
             cur.close()
             return redirect(url_for('productos_bp.productos'))
+        
         precio_unit = float(prod[0]) if prod[0] is not None else 0.0
 
         id_usuario = current_user.id
@@ -219,6 +213,7 @@ def agregar(id_producto):
         if not id_pedido:
             id_pedido = crear_pedido_pendiente(id_usuario)
 
+        # Volver a obtener el cursor para la siguiente operación
         cur = db.connection.cursor()
         cur.execute("""
             SELECT id_detalle, cantidad FROM detalle_pedido
@@ -245,15 +240,16 @@ def agregar(id_producto):
             
             cur.execute("""
                 INSERT INTO detalle_pedido 
-                    (id_pedido, id_producto, cantidad, precio_total, estado_vendedor)
-                VALUES (%s, %s, %s, %s, 'aprobado')
+                    (id_pedido, id_producto, cantidad, precio_total, estado_vendedor, aceptado_usuario)
+                VALUES (%s, %s, %s, %s, 'aprobado', 0)
             """, (id_pedido, id_producto, cantidad, precio_total))
 
         db.connection.commit()
         cur.close()
         flash("✅ Producto agregado al carrito.", "success")
     except Exception as e:
-        current_app.db.connection.rollback()
+        if 'db' in locals() and db.connection:
+            db.connection.rollback()
         print(f"❌ Error agregar carrito: {e}") 
         flash("No se pudo agregar el producto al carrito.", "danger")
 
@@ -289,7 +285,8 @@ def eliminar(id_detalle):
         cur.close()
         flash("🗑 Producto eliminado del carrito.", "info")
     except Exception as e:
-        current_app.db.connection.rollback()
+        if 'db' in locals() and db.connection:
+            db.connection.rollback()
         print(f"❌ Error eliminar carrito: {e}")
         flash("No se pudo eliminar el producto.", "danger")
 
@@ -305,7 +302,8 @@ def vaciar():
     try:
         db = current_app.db
         cur = db.connection.cursor()
-        id_pedido = obtener_pedido_pendiente(current_user.id)
+        id_usuario = current_user.id
+        id_pedido = obtener_pedido_pendiente(id_usuario)
         if id_pedido:
             # Eliminar primero los registros en 'solicitudes' que dependen de 'detalle_pedido'
             cur.execute("""
@@ -319,7 +317,8 @@ def vaciar():
         cur.close()
         flash("🧹 Carrito vaciado correctamente.", "info")
     except Exception as e:
-        current_app.db.connection.rollback()
+        if 'db' in locals() and db.connection:
+            db.connection.rollback()
         print(f"❌ Error vaciar carrito: {e}")
         flash("No se pudo vaciar el carrito.", "danger")
 
@@ -387,7 +386,8 @@ def aceptar_cotizacion(id_detalle):
         flash("Cotización aceptada. El precio de tu carrito ha sido actualizado.", "success")
         
     except Exception as e:
-        current_app.db.connection.rollback()
+        if 'current_app' in locals() and hasattr(current_app, 'db'):
+            current_app.db.connection.rollback()
         print(f"Error al aceptar cotización: {e}")
         flash("Error al procesar la aceptación.", "danger")
 
@@ -395,7 +395,7 @@ def aceptar_cotizacion(id_detalle):
 
 
 # ----------------------------
-# 🚨 NUEVA FUNCIÓN: Rechazar cotización
+# Rechazar cotización
 # ----------------------------
 @carrito_bp.route('/rechazar/<int:id_detalle>', methods=['POST'])
 @login_required
@@ -430,13 +430,13 @@ def rechazar_cotizacion(id_detalle):
         # Calcular el nuevo precio total (restablece al precio base)
         precio_base_total = precio_base_unitario * cantidad
 
-        # Actualizar el ítem: aceptado_usuario = 0, precio_total = precio base, estado_vendedor = 'rechazado' (para el HTML)
+        # Actualizar el ítem: aceptado_usuario = 0, precio_total = precio base, estado_vendedor = 'rechazado'
         cur.execute("""
             UPDATE detalle_pedido SET
                 aceptado_usuario = 0,
                 precio_total = %s,
-                precio_propuesto = NULL, -- Limpiamos el precio propuesto
-                estado_vendedor = 'rechazado' -- Marcamos como rechazado
+                precio_propuesto = NULL, 
+                estado_vendedor = 'rechazado'
             WHERE id_detalle = %s
         """, (precio_base_total, id_detalle))
         
@@ -453,7 +453,8 @@ def rechazar_cotizacion(id_detalle):
         flash("❌ Cotización rechazada. El ítem se ha restablecido a su precio base original.", "info")
         
     except Exception as e:
-        current_app.db.connection.rollback()
+        if 'current_app' in locals() and hasattr(current_app, 'db'):
+            current_app.db.connection.rollback()
         print(f"Error al rechazar cotización: {e}")
         flash("Error al procesar el rechazo.", "danger")
 

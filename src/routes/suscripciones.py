@@ -45,10 +45,8 @@ def suscripcion():
         tipo_sub = suscripcion_actual.get('tipo_nombre', '').lower()
         
         if 'básica' in tipo_sub or 'basica' in tipo_sub:
-            # Mostrar solo 2 tutoriales para suscripción básica
             tutoriales_premium = ModelSuscripcion.obtener_videotutoriales_premium(db, limite=2)
         elif 'premium' in tipo_sub:
-            # Mostrar todos los tutoriales para suscripción premium
             tutoriales_premium = ModelSuscripcion.obtener_videotutoriales_premium(db, limite=None)
 
     return render_template(
@@ -69,6 +67,12 @@ def subir_comprobante(id_tipo):
     db = current_app.db
     cursor = db.connection.cursor()
 
+    # Verificar si ya tiene suscripción activa
+    suscripcion_actual = ModelSuscripcion.obtener_suscripcion_activa(db, current_user.id_usuario)
+    if suscripcion_actual:
+        flash("Ya tienes una suscripción activa. Si deseas cambiar de plan, usa la opción 'Actualizar Plan'.", "warning")
+        return redirect(url_for('suscripciones_bp.suscripcion'))
+
     cursor.execute("SELECT * FROM tipo_suscripcion WHERE id_tipo_suscripcion = %s", (id_tipo,))
     plan = cursor.fetchone()
     cursor.close()
@@ -84,15 +88,11 @@ def subir_comprobante(id_tipo):
             return redirect(request.url)
 
         filename = secure_filename(archivo.filename)
-        # Agregar timestamp para evitar nombres duplicados
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{timestamp}_{filename}"
         
         path = os.path.join("src/static/comprobantes", filename)
-        
-        # Crear directorio si no existe
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        
         archivo.save(path)
 
         if ModelSuscripcion.crear_suscripcion(db, current_user.id_usuario, id_tipo, filename):
@@ -102,6 +102,85 @@ def subir_comprobante(id_tipo):
             flash("❌ Error al procesar la suscripción. Intenta de nuevo.", "danger")
 
     return render_template('suscripciones/subir_comprobante.html', plan=plan)
+
+
+# ===============================
+# ACTUALIZAR PLAN (UPGRADE)
+# ===============================
+@suscripciones_bp.route('/actualizar-plan/<int:id_tipo>', methods=['GET', 'POST'])
+@login_required
+def actualizar_plan(id_tipo):
+    """Permite al usuario actualizar su plan actual a uno superior"""
+    db = current_app.db
+    cursor = db.connection.cursor()
+
+    # Verificar suscripción actual
+    suscripcion_actual = ModelSuscripcion.obtener_suscripcion_activa(db, current_user.id_usuario)
+    if not suscripcion_actual:
+        flash("No tienes una suscripción activa para actualizar.", "warning")
+        return redirect(url_for('suscripciones_bp.suscripcion'))
+
+    # Obtener información del nuevo plan
+    cursor.execute("SELECT * FROM tipo_suscripcion WHERE id_tipo_suscripcion = %s", (id_tipo,))
+    nuevo_plan = cursor.fetchone()
+    
+    if not nuevo_plan:
+        flash("Plan no encontrado", "danger")
+        cursor.close()
+        return redirect(url_for('suscripciones_bp.suscripcion'))
+
+    # Verificar que sea un upgrade (no downgrade)
+    if nuevo_plan[3] <= suscripcion_actual['precio_mensual']:
+        flash("Solo puedes actualizar a un plan superior.", "warning")
+        cursor.close()
+        return redirect(url_for('suscripciones_bp.suscripcion'))
+
+    cursor.close()
+
+    if request.method == 'POST':
+        archivo = request.files.get('comprobante')
+        if not archivo or archivo.filename == '':
+            flash("Debes subir el comprobante de pago de la diferencia.", "danger")
+            return redirect(request.url)
+
+        filename = secure_filename(archivo.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"upgrade_{timestamp}_{filename}"
+        
+        path = os.path.join("src/static/comprobantes", filename)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        archivo.save(path)
+
+        # Crear solicitud de actualización
+        cursor = db.connection.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO suscripciones 
+                (id_usuario, id_tipo_suscripcion, fecha_inicio, fecha_fin, 
+                 comprobante, estado)
+                VALUES (%s, %s, %s, %s, %s, 'pendiente')
+            """, (
+                current_user.id_usuario, 
+                id_tipo, 
+                suscripcion_actual['fecha_inicio'],
+                suscripcion_actual['fecha_fin'],
+                filename
+            ))
+            db.connection.commit()
+            cursor.close()
+            
+            flash("✅ Solicitud de actualización enviada. Espera la aprobación del administrador.", "success")
+            return redirect(url_for('suscripciones_bp.suscripcion'))
+        except Exception as e:
+            db.connection.rollback()
+            cursor.close()
+            flash(f"❌ Error al procesar la actualización: {e}", "danger")
+
+    return render_template(
+        'suscripciones/actualizar_plan.html', 
+        plan_actual=suscripcion_actual,
+        nuevo_plan=nuevo_plan
+    )
 
 
 # ===============================
@@ -118,7 +197,6 @@ def mi_suscripcion():
         flash("No tienes suscripción activa.", "info")
         return redirect(url_for('suscripciones_bp.suscripcion'))
 
-    # Obtener beneficios según el tipo de suscripción
     descuento = ModelSuscripcion.obtener_descuento(db, current_user.id_usuario)
     limite_tutoriales = ModelSuscripcion.obtener_limite_tutoriales(db, current_user.id_usuario)
     

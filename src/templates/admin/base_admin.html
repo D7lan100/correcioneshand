@@ -71,11 +71,6 @@
           <small>{{ current_user.nombre_completo or current_user.nombre or current_user.username }}</small>
         </div>
 
-        <!-- Navegación -->
-        <a href="{{ url_for('admin_bp.index') }}" class="{% if request.endpoint == 'admin_bp.index' %}active{% endif %}">
-          <i class="fa-solid fa-chart-line"></i> Dashboard
-        </a>
-
         <a href="{{ url_for('admin_bp.usuarios') }}" class="{% if request.endpoint == 'admin_bp.usuarios' %}active{% endif %}">
           <i class="fa-solid fa-users"></i> Usuarios
         </a>

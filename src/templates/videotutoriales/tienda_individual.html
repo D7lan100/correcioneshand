@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Tienda Premium - HandiGenius{% endblock %}
+
+{% block customCSS %}
+
+<style>
+body { background-color: #f0f2f5; }
+
+.shop-header {
+background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+color: white;
+padding: 60px 0;
+border-radius: 0 0 50px 50px;
+margin-bottom: 40px;
+box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.video-card-container {
+background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,249,250,0.9));
+border-radius: 25px;
+box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+backdrop-filter: blur(10px);
+border: 1px solid rgba(255,255,255,0.8);
+overflow: hidden;
+position: relative;
+transition: all 0.3s ease;
+height: 100%;
+display: flex;
+flex-direction: column;
+}
+
+.video-card-container::before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+right: 0;
+height: 4px;
+background: linear-gradient(90deg, #0080FF, #3399FF, #66B2FF);
+}
+
+.video-card-container:hover {
+transform: translateY(-10px);
+}
+
+.video-thumbnail-box {
+position: relative;
+height: 200px;
+overflow: hidden;
+}
+
+.video-thumbnail-box img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+}
+
+.premium-badge {
+position: absolute;
+top: 15px;
+left: 15px;
+background: linear-gradient(135deg, #0080FF, #3399FF);
+color: white;
+padding: 5px 15px;
+border-radius: 20px;
+font-size: 0.75rem;
+font-weight: 700;
+text-transform: uppercase;
+}
+
+.price-tag {
+position: absolute;
+bottom: 15px;
+right: 15px;
+background: white;
+color: #0080FF;
+padding: 6px 18px;
+border-radius: 15px;
+font-weight: 800;
+font-size: 1.2rem;
+box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.video-info-body {
+padding: 25px;
+flex-grow: 1;
+display: flex;
+flex-direction: column;
+}
+
+.video-title-text {
+color: #2d3748;
+font-weight: 700;
+font-size: 1.4rem;
+margin-bottom: 10px;
+}
+
+.btn-action-cart {
+background: linear-gradient(135deg, #0080FF, #3399FF);
+color: white !important;
+padding: 12px 25px;
+border-radius: 25px;
+font-weight: 600;
+text-align: center;
+border: none;
+width: 100%;
+transition: all 0.3s ease;
+display: block;
+text-decoration: none;
+cursor: pointer;
+}
+
+.btn-action-cart:hover {
+background: linear-gradient(135deg, #0066CC, #2685E6);
+transform: translateY(-2px);
+}
+
+.info-pills {
+display: flex;
+gap: 8px;
+margin-bottom: 15px;
+}
+
+.pill-item {
+background: rgba(0,128,255,0.1);
+color: #0080FF;
+padding: 4px 12px;
+border-radius: 12px;
+font-size: 0.8rem;
+font-weight: 600;
+}
+</style>
+
+{% endblock %}
+
+{% block content %}
+
+<header class="shop-header text-center">
+<div class="container">
+<h1 class="fw-bold"><i class="bi bi-gem text-warning"></i> HandiGenius Premium</h1>
+<p class="lead opacity-75">Videotutoriales exclusivos con acceso de por vida</p>
+</div>
+</header>
+
+<div class="container mb-5">
+{% if not videos %}
+<div class="text-center py-5">
+<i class="bi bi-camera-video-off fa-4x text-muted mb-3"></i>
+<h3 class="text-secondary">Próximamente nuevos tutoriales</h3>
+</div>
+{% else %}
+<div class="row g-4">
+{% for video in videos %}
+<div class="col-12 col-md-6 col-lg-4">
+<div class="video-card-container">
+<div class="video-thumbnail-box">
+{% if video[5] %}
+<img src="{{ video[5] }}" alt="{{ video[1] }}">
+{% else %}
+<div class="h-100 d-flex align-items-center justify-content-center bg-light text-muted">
+<i class="bi bi-play-btn fa-3x"></i>
+</div>
+{% endif %}
+<span class="premium-badge">Exclusivo</span>
+<div class="price-tag">${{ "{:,.0f}".format(video[3]|default(0)|float) }}</div>
+</div>
+
+        <div class="video-info-body">
+          <h3 class="video-title-text text-truncate">{{ video[1] }}</h3>
+          
+          <div class="info-pills">
+            <span class="pill-item"><i class="bi bi-bar-chart me-1"></i> {{ video[10]|default('Medio') }}</span>
+            <span class="pill-item"><i class="bi bi-clock me-1"></i> {{ video[11]|default('N/A') }}</span>
+          </div>
+
+          <p class="text-muted small mb-4">
+            {{ video[2][:100] if video[2] else 'Sin descripción' }}...
+          </p>
+
+          <div class="mt-auto">
+            {% if suscripcion and suscripcion.es_premium %}
+              <a href="{{ url_for('videotutoriales_bp.ver_video', id_video=video[0]) }}" class="btn-action-cart" style="background: #1a202c;">
+                <i class="bi bi-play-fill"></i> Ver Tutorial
+              </a>
+            {% else %}
+              <!-- FORMULARIO DIRECTO: IMPOSIBLE QUE FALLE -->
+              <form action="{{ url_for('carrito_bp.agregar', id_producto=video[0]) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="cantidad" value="1">
+                <button type="submit" class="btn-action-cart">
+                  <i class="bi bi-cart-plus-fill me-2"></i>Añadir al Carrito
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+
+{% endif %}
+
+</div>
+{% endblock %}
