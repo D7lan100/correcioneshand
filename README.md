@@ -174,17 +174,8 @@ Este proyecto es de código abierto y está disponible bajo la licencia MIT.
 
 ## 👨‍💻 Autores
 
-**D7lan100**
+
 - GitHub: [@D7lan100](https://github.com/D7lan100)
 - GitHub: [@JohannL27](https://github.com/JohannL27)
 - GitHub: [@Copetin999](https://github.com/Copetin999)
 - GitHub: [@juanesteban999](https://github.com/juanesteban999)
-
-
-## 🙏 Agradecimientos
-
-- Flask y su comunidad
-- Railway por el hosting
-- Todos los contribuidores
-
-⭐ Si te gusta este proyecto, ¡dale una estrella en GitHub!
